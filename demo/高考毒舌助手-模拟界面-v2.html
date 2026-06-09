@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高考毒舌助手 · 模拟演示 v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #090a16;
+    --bg-card: #111327;
+    --bg-bubble-ai: #1a1d3a;
+    --bg-bubble-user: linear-gradient(135deg, #4f46e5, #7c3aed);
+    --accent: #f43f5e;
+    --accent-glow: rgba(244,63,94,0.3);
+    --gold: #f59e0b;
+    --text-primary: #e8e8f4;
+    --text-secondary: #9898b8;
+    --border: rgba(255,255,255,0.06);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: radial-gradient(ellipse at 50% 30%, #141830 0%, #090a16 70%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  /* Ambient glow behind phone */
+  body::before {
+    content: '';
+    position: fixed;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(244,63,94,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: ambientPulse 6s ease-in-out infinite;
+  }
+  @keyframes ambientPulse {
+    0%,100% { opacity: 0.5; transform: translate(-50%,-50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%,-50%) scale(1.2); }
+  }
+
+  /* ===== Phone Frame ===== */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg-card);
+    border-radius: 44px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+      0 0 0 3px #1e2038,
+      0 0 0 6px #151728,
+      0 0 0 8px #0f1020,
+      0 30px 80px rgba(0,0,0,0.6),
+      0 0 120px rgba(79,70,229,0.06);
+    position: relative;
+  }
+
+  /* Notch */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 28px;
+    background: #0a0b14;
+    border-radius: 20px;
+    z-index: 10;
+  }
+
+  /* ===== Status Bar ===== */
+  .status-bar {
+    background: linear-gradient(135deg, rgba(244,63,94,0.12), rgba(124,58,237,0.08));
+    color: var(--accent);
+    text-align: center;
+    padding: 8px 20px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(244,63,94,0.1);
+    backdrop-filter: blur(10px);
+  }
+  .status-bar .pulse-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulseDot 1.5s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  @keyframes pulseDot {
+    0%,100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
+
+  /* ===== Header ===== */
+  .header {
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    background: rgba(17,19,39,0.5);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-avatar {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(244,63,94,0.3);
+    position: relative;
+  }
+  .header-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 12px; height: 12px;
+    background: #4ade80;
+    border-radius: 50%;
+    border: 2px solid #111327;
+  }
+  .header-info { flex: 1; }
+  .header-name {
+    font-size: 16px; font-weight: 700; color: var(--text-primary);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .header-badge {
+    font-size: 10px;
+    background: rgba(244,63,94,0.15);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(244,63,94,0.2);
+  }
+  .header-subtitle {
+    font-size: 11px; color: var(--text-secondary); margin-top: 2px;
+    font-weight: 400;
+  }
+  .header-actions { display: flex; gap: 16px; }
+  .header-actions span { font-size: 18px; color: var(--text-secondary); cursor: default; }
+
+  /* ===== Chat Area ===== */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scroll-behavior: smooth;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(79,70,229,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(244,63,94,0.03) 0%, transparent 50%),
+      var(--bg-card);
+  }
+  .chat::-webkit-scrollbar { width: 4px; }
+  .chat::-webkit-scrollbar-track { background: transparent; }
+  .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+  /* ===== Bubbles ===== */
+  .msg {
+    max-width: 82%;
+    animation: bubbleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    opacity: 0;
+  }
+  @keyframes bubbleIn {
+    0% { opacity: 0; transform: translateY(16px) scale(0.94); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .msg.user { align-self: flex-end; }
+  .msg.ai { align-self: flex-start; }
+
+  .bubble {
+    padding: 11px 15px;
+    border-radius: 20px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    position: relative;
+    word-break: break-word;
+  }
+  .msg.user .bubble {
+    background: var(--bg-bubble-user);
+    color: #fff;
+    border-bottom-right-radius: 6px;
+    box-shadow: 0 4px 15px rgba(79,70,229,0.25);
+    font-weight: 500;
+  }
+  .msg.ai .bubble {
+    background: var(--bg-bubble-ai);
+    color: #d0d0e8;
+    border-bottom-left-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* Roast bubbles */
+  .msg.roast .bubble {
+    background: linear-gradient(135deg, #241220, #2d1528);
+    border-left: 3px solid var(--accent);
+    box-shadow: 0 2px 12px rgba(244,63,94,0.1);
+  }
+  .msg.roast .bubble::before {
+    content: '';
+    position: absolute;
+    top: 6px; left: -11px;
+    width: 20px; height: 20px;
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    box-shadow: 0 2px 8px rgba(244,63,94,0.4);
+  }
+  .msg.roast:nth-child(1 of .roast) .bubble::before { content: '😈'; }
+  .msg.roast:nth-child(2 of .roast) .bubble::before { content: '😈'; }
+  .msg.roast:nth-child(3 of .roast) .bubble::before { content: '😈'; }
+
+  /* Analysis bubble */
+  .msg.analysis .bubble {
+    background: linear-gradient(135deg, #131a2e, #192238);
+    border-left: 3px solid #6366f1;
+    box-shadow: 0 2px 12px rgba(99,102,241,0.08);
+  }
+
+  /* Admit / disclaimer bubble */
+  .msg.admit .bubble {
+    background: linear-gradient(135deg, #121e18, #18281e);
+    border-left: 3px solid #22c55e;
+    font-size: 12.5px;
+    color: #90a898;
+    box-shadow: 0 2px 8px rgba(34,197,94,0.06);
+  }
+
+  /* === Text highlights === */
+  .hl-gold { color: var(--gold); font-weight: 700; }
+  .hl-red { color: var(--accent); font-weight: 600; }
+  .hl-green { color: #4ade80; font-weight: 600; }
+  .hl-dim { color: #8888aa; font-size: 0.92em; }
+
+  /* ===== Typing Indicator ===== */
+  .typing-bubble {
+    display: flex; gap: 4px; padding: 12px 16px;
+    align-items: center;
+  }
+  .typing-bubble span {
+    width: 6px; height: 6px;
+    background: #555;
+    border-radius: 50%;
+    animation: typeBounce 1.5s infinite;
+  }
+  .typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typeBounce {
+    0%,60%,100% { opacity: 0.2; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-6px); }
+  }
+
+  /* ===== Center Cards ===== */
+  .center-card {
+    align-self: center;
+    max-width: 100%;
+    animation: bubbleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    opacity: 0;
+  }
+
+  .tagline-card {
+    background: transparent;
+    text-align: center;
+    padding: 24px 16px;
+    border-radius: 20px;
+  }
+  .tagline-card .main-line {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.7;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #e8e8f4, #c0c0dc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .tagline-card .sub-line {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    font-weight: 400;
+  }
+
+  .date-card {
+    background: linear-gradient(135deg, #e11d48, #be123c);
+    text-align: center;
+    padding: 28px 32px;
+    border-radius: 24px;
+    box-shadow:
+      0 12px 40px rgba(225,29,72,0.35),
+      0 0 80px rgba(225,29,72,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .date-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.05));
+    pointer-events: none;
+  }
+  .date-card .date-big {
+    font-size: 26px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.6;
+    letter-spacing: 1px;
+  }
+  .date-card .date-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 4px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ===== Emoji indicators ===== */
+  .emoji-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  /* ===== Input Bar ===== */
+  .input-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 14px;
+    flex-shrink: 0;
+    background: rgba(10,11,24,0.6);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .input-bar .attach-btn {
+    width: 34px; height: 34px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary);
+    font-size: 18px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .input-field {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 10px 16px;
+    color: #d0d0e8;
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus { border-color: rgba(99,102,241,0.3); }
+  .input-field::placeholder { color: #444; }
+  .send-btn {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 12px;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    transition: all 0.2s;
+  }
+  .send-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+
+  /* ===== Controls ===== */
+  .controls {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+  }
+  .controls button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(244,63,94,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(244,63,94,0.4); }
+  .btn-ghost {
+    background: rgba(255,255,255,0.06);
+    color: #c0c0dc;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="status-bar">
+    <span class="pulse-dot"></span>毒舌模式已激活 — 你说的每句话它都会怼回来
+  </div>
+
+  <div class="header">
+    <div class="header-avatar">🎓</div>
+    <div class="header-info">
+      <div class="header-name">
+        高考毒舌助手
+        <span class="header-badge">AI</span>
+      </div>
+      <div class="header-subtitle">别的AI帮你算分，我帮你认清自己</div>
+    </div>
+    <div class="header-actions">
+      <span>🔍</span>
+      <span>⋯</span>
+    </div>
+  </div>
+
+  <div class="chat" id="chat"></div>
+
+  <div class="input-bar">
+    <div class="attach-btn">+</div>
+    <input class="input-field" type="text" value="广东·物理类·625分·想学计算机" readonly>
+    <button class="send-btn">↑</button>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn-ghost" onclick="location.reload()">↻ 重播</button>
+  <button class="btn-primary" onclick="startDemo()">▶ 开始演示</button>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+
+// ================================================================
+// Demo sequence — each step has type + delay + optional text
+// ================================================================
+const sequence = [
+  // 1. User input
+  { d: 600, t: 'user', m: '广东·物理类·625分·想学计算机' },
+
+  // 2. AI typing...
+  { d: 1000, t: 'typing' },
+
+  // 3. Roast #1
+  { d: 1600, t: 'roast', m: '<span class="hl-red">625分想冲华科计算机？</span>你知道去年华科计算机在广东多少分吗？<span class="hl-gold">651</span>。<br>你这分数连门卫的微信都加不上。' },
+
+  // 4. Roast #2
+  { d: 1800, t: 'roast', m: '深大计算机也别做梦了。人家虽然是双非，<span class="hl-gold">分数线比你家门口985还高</span>。' },
+
+  // 5. Roast #3
+  { d: 1600, t: 'roast', m: '不过你比我预期好一点点——<span class="hl-green">至少没说想冲清华</span>。' },
+
+  // 6. Typing
+  { d: 1200, t: 'typing' },
+
+  // 7. Analysis
+  { d: 1600, t: 'analysis', m:
+    '说正经的。根据<span class="hl-gold">2025年广东物理类</span>数据：<br><br>'
+    + '🔴 <b>冲刺</b><br>'
+    + '　华南理工 · 软件工程 <span class="hl-gold">638</span><br>'
+    + '　电子科大 · 计科 <span class="hl-gold">642</span><br><br>'
+    + '🟡 <b>稳妥</b><br>'
+    + '　哈工大深圳 · 智能科学 <span class="hl-gold">628</span><br>'
+    + '　西电 · 计科 <span class="hl-gold">620</span><br><br>'
+    + '🟢 <b>保底</b><br>'
+    + '　广工 · 计科 <span class="hl-gold">598</span>'
+  },
+
+  // 8. Admit
+  { d: 2000, t: 'admit', m:
+    '以上数据来自公开渠道，我是AI不是算命先生。<br>'
+    + '最终决定问你自己和你爸妈——<br>'
+    + '<span class="hl-green">但别问你二舅，他只会说"学计算机好啊出来修电脑"。</span>'
+  },
+
+  // 9. Tagline
+  { d: 2200, t: 'tagline', m: '别的AI帮你算分<br>我帮你认清自己。', sub: '顺便让你笑出声。' },
+
+  // 10. Date announcement
+  { d: 1800, t: 'date', m: '6月23日 出分日<br>准时上线', sub: '带着你的分数来。' },
+];
+
+// ================================================================
+// Render helpers
+// ================================================================
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function mkEl(tag, cls, html) {
+  const el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (html) el.innerHTML = html;
+  return el;
+}
+
+function addBubble(type, html) {
+  const wrap = mkEl('div', `msg ${type}`);
+  const bubble = mkEl('div', 'bubble', html);
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  scrollDown();
+}
+
+function addTyping() {
+  const wrap = mkEl('div', 'msg ai');
+  const bubble = mkEl('div', 'typing-bubble');
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  scrollDown();
+  return wrap;
+}
+
+function addTagline(main, sub) {
+  const wrap = mkEl('div', 'center-card');
+  const card = mkEl('div', 'tagline-card');
+  card.innerHTML = `<div class="main-line">${main}</div>`;
+  if (sub) card.innerHTML += `<div class="sub-line">${sub}</div>`;
+  wrap.appendChild(card);
+  chat.appendChild(wrap);
+  scrollDown();
+}
+
+function addDateCard(main, sub) {
+  const wrap = mkEl('div', 'center-card');
+  const card = mkEl('div', 'date-card');
+  card.innerHTML = `<div class="date-big">${main}</div>`;
+  if (sub) card.innerHTML += `<div class="date-sub">${sub}</div>`;
+  wrap.appendChild(card);
+  chat.appendChild(wrap);
+  scrollDown();
+}
+
+function scrollDown() {
+  chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+}
+
+// ================================================================
+// Run demo
+// ================================================================
+let typingEl = null;
+
+async function startDemo() {
+  chat.innerHTML = '';
+  document.querySelector('.input-field').value = '广东·物理类·625分·想学计算机';
+
+  for (const step of sequence) {
+    // Handle typing indicator
+    if (step.t === 'typing') {
+      typingEl = addTyping();
+      await sleep(step.d);
+      if (typingEl?.parentNode) { typingEl.remove(); typingEl = null; }
+      continue;
+    }
+
+    // Remove typing if still present (cleanup)
+    if (typingEl?.parentNode) { typingEl.remove(); typingEl = null; }
+
+    // Render content
+    if (step.t === 'user' || step.t === 'roast' || step.t === 'analysis' || step.t === 'admit') {
+      addBubble(step.t, step.m);
+    } else if (step.t === 'tagline') {
+      addTagline(step.m, step.sub);
+    } else if (step.t === 'date') {
+      addDateCard(step.m, step.sub);
+    }
+
+    await sleep(step.d);
+  }
+}
+
+// Auto-start
+setTimeout(startDemo, 700);
+</script>
+</body>
+</html>

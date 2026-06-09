@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高考毒舌助手 - 模拟演示</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #0f0f0f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* ===== Phone Frame ===== */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #1a1a2e;
+    border-radius: 40px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 3px #2a2a3e;
+    position: relative;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 16px 20px;
+    border-bottom: 1px solid #2a2a4a;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .header-avatar {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, #e94560, #ff6b6b);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .header-info { flex: 1; }
+  .header-name {
+    font-size: 16px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .header-badge {
+    font-size: 10px;
+    background: #e94560;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 400;
+  }
+  .header-subtitle { font-size: 11px; color: #888; margin-top: 2px; }
+  .header-dot { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; flex-shrink: 0; }
+
+  /* ===== Status Bar ===== */
+  .status-bar {
+    background: #e94560;
+    color: #fff;
+    text-align: center;
+    padding: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .status-bar .blink {
+    animation: blink 1s infinite;
+  }
+  @keyframes blink {
+    0%,100%{opacity:1} 50%{opacity:0}
+  }
+
+  /* ===== Chat Area ===== */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #1a1a2e;
+    scroll-behavior: smooth;
+  }
+  .chat::-webkit-scrollbar { width: 3px; }
+  .chat::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+  /* ===== Bubbles ===== */
+  .msg {
+    max-width: 85%;
+    animation: popIn 0.35s ease-out both;
+    opacity: 0;
+  }
+  @keyframes popIn {
+    0% { opacity: 0; transform: translateY(12px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .msg.user { align-self: flex-end; }
+  .msg.ai { align-self: flex-start; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    position: relative;
+  }
+  .msg.user .bubble {
+    background: #2563eb;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.ai .bubble {
+    background: #2a2a4a;
+    color: #e2e2f0;
+    border-bottom-left-radius: 4px;
+  }
+
+  /* AI 毒舌气泡特殊样式 */
+  .msg.roast .bubble {
+    background: linear-gradient(135deg, #3d1a2e, #4a1a3a);
+    border-left: 3px solid #e94560;
+  }
+  .msg.roast .bubble::before {
+    content: '😈';
+    position: absolute;
+    top: -10px; left: -8px;
+    font-size: 16px;
+  }
+
+  /* AI 分析气泡 */
+  .msg.analysis .bubble {
+    background: #1e2a3a;
+    border-left: 3px solid #3b82f6;
+  }
+  .msg.analysis .bubble::before {
+    content: '📊';
+    position: absolute;
+    top: -10px; left: -8px;
+    font-size: 16px;
+  }
+
+  /* AI 自首气泡 */
+  .msg.admit .bubble {
+    background: #1e2e1e;
+    border-left: 3px solid #4ade80;
+    font-size: 13px; color: #aaa;
+  }
+  .msg.admit .bubble::before {
+    content: '🤖';
+    position: absolute;
+    top: -10px; left: -8px;
+    font-size: 16px;
+  }
+
+  .bubble .highlight { color: #fbbf24; font-weight: 700; }
+  .bubble .red { color: #ef4444; font-weight: 600; }
+  .bubble .green { color: #4ade80; font-weight: 600; }
+
+  /* ===== Typing indicator ===== */
+  .typing { display: flex; gap: 4px; padding: 10px 14px; }
+  .typing span {
+    width: 7px; height: 7px;
+    background: #666;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing {
+    0%,60%,100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* ===== Input Bar ===== */
+  .input-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #16213e;
+    border-top: 1px solid #2a2a4a;
+    flex-shrink: 0;
+  }
+  .input-bar .plus {
+    width: 32px; height: 32px;
+    background: #2a2a4a;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #888;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .input-field {
+    flex: 1;
+    background: #2a2a4a;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  .input-field::placeholder { color: #555; }
+  .input-bar .send-btn {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #e94560, #ff6b6b);
+    border-radius: 50%;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+  }
+  .input-bar .send-btn:hover { transform: scale(1.1); }
+
+  /* ===== Restart Button (outside phone) ===== */
+  .controls {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    gap: 10px;
+  }
+  .controls button {
+    padding: 10px 20px;
+    background: #e94560;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .controls button:hover { background: #c73650; }
+  .controls button.secondary { background: #333; }
+  .controls button.secondary:hover { background: #444; }
+
+  /* ===== Split Tag ===== */
+  .time-tag {
+    text-align: center;
+    font-size: 11px;
+    color: #555;
+    margin: 8px 0;
+    animation: popIn 0.35s ease-out both;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="status-bar">
+    🔥 <span class="blink">●</span> AI 毒舌中——你说的每句话它都会怼回来
+  </div>
+  <div class="header">
+    <div class="header-avatar">🎓</div>
+    <div class="header-info">
+      <div class="header-name">高考毒舌助手 <span class="header-badge">AI</span></div>
+      <div class="header-subtitle">别的AI帮你算分，我帮你认清自己</div>
+    </div>
+    <div class="header-dot"></div>
+  </div>
+  <div class="chat" id="chat"></div>
+  <div class="input-bar">
+    <div class="plus">+</div>
+    <input class="input-field" type="text" value="广东·物理类·625分·想学计算机" readonly>
+    <button class="send-btn">↑</button>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="secondary" onclick="location.reload()">🔄 重播</button>
+  <button onclick="startDemo()">▶ 开始</button>
+</div>
+
+<script>
+// ================================================================
+// Demo Timeline
+// ================================================================
+
+const chat = document.getElementById('chat');
+
+const messages = [
+  // --- 用户输入 ---
+  {
+    delay: 500,
+    type: 'user',
+    text: '广东·物理类·625分·想学计算机'
+  },
+
+  // --- AI 打字中 ---
+  {
+    delay: 1200,
+    type: 'typing'
+  },
+
+  // --- 毒舌三连 ---
+  {
+    delay: 1800,
+    type: 'roast',
+    text: '<span class="red">625分想冲华科计算机？</span>你知道去年华科计算机在广东多少分吗？<span class="highlight">651</span>。你这分数连门卫的微信都加不上。'
+  },
+  {
+    delay: 2000,
+    type: 'roast',
+    text: '深大计算机也别做梦了。人家虽然是双非，<span class="highlight">分数线比你家门口985还高</span>。'
+  },
+  {
+    delay: 1800,
+    type: 'roast',
+    text: '不过你比我预期好一点点——<span class="green">至少没说想冲清华</span>。'
+  },
+
+  // --- AI 打字中 ---
+  {
+    delay: 1500,
+    type: 'typing'
+  },
+
+  // --- 现实分析 ---
+  {
+    delay: 1500,
+    type: 'analysis',
+    text: '说正经的。根据 2025 年广东物理类数据：<br><br>🔴 冲刺：华南理工（软件工程 <span class="highlight">638</span>）、电子科大（计科 <span class="highlight">642</span>）<br>🟡 稳妥：哈工大深圳（智能科学 <span class="highlight">628</span>）、西电（计科 <span class="highlight">620</span>）<br>🟢 保底：广工（计科 <span class="highlight">598</span>）'
+  },
+
+  // --- AI 自首 ---
+  {
+    delay: 2000,
+    type: 'admit',
+    text: '以上数据来自公开渠道，我是AI不是算命先生。<br>最终决定问你自己和你爸妈——<br><span class="green">但别问你二舅，他只会说"学计算机好啊出来修电脑"。</span>'
+  },
+
+  // --- 大标题收尾 ---
+  {
+    delay: 2500,
+    type: 'big_title',
+    text: '别的AI帮你算分<br>我帮你认清自己。<br><br><span style="font-size:13px;color:#888">顺便让你笑出声。</span>',
+  },
+
+  // --- 上线日期 ---
+  {
+    delay: 2000,
+    type: 'date_announce',
+    text: '6月23日 出分日<br>准时上线<br><br><span style="font-size:12px;color:#e94560">带着你的分数来。</span>'
+  }
+];
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function createBubble(type, text) {
+  const div = document.createElement('div');
+  div.className = `msg ${type}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = text;
+  div.appendChild(bubble);
+
+  return div;
+}
+
+function createTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble typing';
+  bubble.innerHTML = '<span></span><span></span><span></span>';
+  div.appendChild(bubble);
+  return div;
+}
+
+function createBigTitle(text) {
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.style.maxWidth = '100%';
+  div.style.alignSelf = 'center';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = text;
+  bubble.style.cssText = `
+    background: transparent;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 900;
+    color: #fff;
+    padding: 20px;
+    border: none;
+    line-height: 1.8;
+  `;
+  div.appendChild(bubble);
+  return div;
+}
+
+function createDateAnnounce(text) {
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.style.maxWidth = '100%';
+  div.style.alignSelf = 'center';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = text;
+  bubble.style.cssText = `
+    background: linear-gradient(135deg, #e94560, #c73650);
+    text-align: center;
+    font-size: 20px;
+    font-weight: 900;
+    color: #fff;
+    padding: 24px;
+    border: none;
+    border-radius: 20px;
+    line-height: 1.8;
+    box-shadow: 0 8px 30px rgba(233,69,96,0.3);
+  `;
+  div.appendChild(bubble);
+  return div;
+}
+
+function scrollToBottom() {
+  chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+}
+
+let typingEl = null;
+
+async function startDemo() {
+  chat.innerHTML = '';
+  document.querySelector('.input-field').value = '广东·物理类·625分·想学计算机';
+
+  for (const msg of messages) {
+    if (msg.type === 'typing') {
+      typingEl = createTyping();
+      chat.appendChild(typingEl);
+      scrollToBottom();
+      await sleep(msg.delay);
+      if (typingEl && typingEl.parentNode) {
+        typingEl.remove();
+        typingEl = null;
+      }
+      continue;
+    }
+
+    let el;
+    if (msg.type === 'big_title') {
+      el = createBigTitle(msg.text);
+    } else if (msg.type === 'date_announce') {
+      el = createDateAnnounce(msg.text);
+    } else {
+      el = createBubble(msg.type, msg.text);
+    }
+
+    chat.appendChild(el);
+    scrollToBottom();
+    await sleep(msg.delay);
+  }
+}
+
+// Auto-start
+setTimeout(startDemo, 800);
+</script>
+</body>
+</html>

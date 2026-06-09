@@ -1,0 +1,6 @@
+# BuildInBilibili_JH · .gitignore
+.DS_Store
+*.swp
+*.swo
+*~
+.Trash-*
