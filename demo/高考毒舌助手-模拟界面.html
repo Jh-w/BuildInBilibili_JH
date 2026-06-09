@@ -242,7 +242,7 @@
   <div class="chat" id="chat"></div>
   <div class="input-bar">
     <div class="attach-btn">+</div>
-    <input class="input-field" type="text" value="广东·物理类·625分·想学计算机" readonly>
+    <input class="input-field" type="text" placeholder="输入分数，开始挨骂…" readonly>
     <button class="send-btn">↑</button>
   </div>
 </div>
@@ -300,7 +300,6 @@ function addDate(main,sub){
 
 async function startDemo(){
   chat.innerHTML='';
-  document.querySelector('.input-field').value='广东·物理类·625分·想学计算机';
   for(const s of sequence){
     if(s.t==='typing'){te=addTyping();await sleep(s.d);if(te?.parentNode){te.remove();te=null;}continue;}
     if(te?.parentNode){te.remove();te=null;}
