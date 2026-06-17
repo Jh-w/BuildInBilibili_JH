@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高考毒舌助手 · 聊天进化流</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-page: #070711;
+    --bg-phone: #0b0b1a;
+    --bg-chat: #0b0b1a;
+    --bg-bubble-user: #4f46e5;
+    --bg-bubble-ai: #14142e;
+    --text-bubble: #eaeaef;
+    --text-dim: #8888a8;
+    --text-mid: #aaaacc;
+    --accent: #f43f5e;
+    --accent-glow: rgba(244,63,94,0.15);
+    --border: rgba(255,255,255,0.04);
+    --card: rgba(255,255,255,0.02);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg-page);
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 20px;
+  }
+
+  .phone {
+    width: 390px; height: 844px;
+    background: var(--bg-phone);
+    border-radius: 44px; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 0 3px #181830, 0 0 0 6px #101024, 0 0 0 8px #080814, 0 30px 80px rgba(0,0,0,0.75);
+    position: relative;
+  }
+
+  /* ===== Countdown Banner ===== */
+  .countdown-banner {
+    background: linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.04));
+    color: var(--accent); text-align: center;
+    padding: 6px 16px; font-size: 10.5px; font-weight: 600;
+    flex-shrink: 0; border-bottom: 1px solid rgba(244,63,94,0.08);
+    letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .countdown-number {
+    font-size: 14px; font-weight: 900; letter-spacing: 1px;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    padding: 12px 18px; display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0; border-bottom: 1px solid var(--border);
+  }
+  .header-avatar {
+    width: 40px; height: 40px; background: var(--accent);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 17px; box-shadow: 0 3px 12px rgba(244,63,94,0.2);
+    position: relative;
+  }
+  .header-avatar::after {
+    content: ''; position: absolute; bottom: -1px; right: -1px;
+    width: 10px; height: 10px; background: #4ade80; border-radius: 50%;
+    border: 2px solid var(--bg-phone);
+  }
+  .header-info { flex: 1; }
+  .header-name { font-size: 15px; font-weight: 700; color: var(--text-bubble); }
+  .header-subtitle { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+  .header-roast-level {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(244,63,94,0.08); padding: 4px 10px;
+    border-radius: 14px; border: 1px solid rgba(244,63,94,0.12);
+    flex-shrink: 0;
+  }
+  .header-roast-level span { font-size: 14px; }
+  .header-roast-level .rl-text { font-size: 10px; color: var(--accent); font-weight: 700; }
+
+  /* ===== Chat ===== */
+  .chat {
+    flex: 1; overflow-y: auto; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+    scroll-behavior: smooth;
+  }
+  .chat::-webkit-scrollbar { width: 2px; }
+  .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.04); border-radius: 2px; }
+
+  /* ===== Messages ===== */
+  @keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .msg {
+    max-width: 84%; animation: msgIn 0.3s ease-out both;
+  }
+  .msg.user { align-self: flex-end; }
+  .msg.ai   { align-self: flex-start; }
+
+  .bubble {
+    padding: 10px 14px; border-radius: 18px;
+    font-size: 13px; line-height: 1.7; word-break: break-word;
+    color: var(--text-bubble); position: relative;
+  }
+  .msg.user .bubble {
+    background: var(--bg-bubble-user);
+    border-bottom-right-radius: 6px; font-weight: 500;
+  }
+  .msg.ai .bubble {
+    background: var(--bg-bubble-ai);
+    border-bottom-left-radius: 6px;
+  }
+
+  /* Roast stripe */
+  .msg.ai.roast .bubble { border-left: 3px solid var(--accent); }
+
+  /* Prefix */
+  .prefix {
+    display: block; font-size: 10px; font-weight: 700;
+    color: var(--accent); margin-bottom: 4px; letter-spacing: 0.5px;
+  }
+
+  /* ===== Enhanced Roast Card ===== */
+  .roast-card {
+    background: var(--bg-bubble-ai); border-radius: 16px;
+    padding: 14px; max-width: 88%; align-self: flex-start;
+    border: 1px solid rgba(244,63,94,0.08);
+    animation: msgIn 0.4s ease-out both;
+    position: relative; overflow: hidden;
+  }
+  .roast-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.3;
+  }
+  .roast-card-header {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
+  }
+  .roast-card-header .icon { font-size: 18px; }
+  .roast-card-header .label {
+    font-size: 10px; font-weight: 700; color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .roast-meter {
+    display: flex; gap: 3px; margin-left: auto;
+  }
+  .roast-meter .pepper { font-size: 12px; }
+  .roast-meter .pepper.off { opacity: 0.2; filter: grayscale(1); }
+
+  .roast-card-body {
+    font-size: 13px; line-height: 2; color: var(--text-bubble);
+  }
+
+  .roast-card-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .roast-card-footer .time {
+    font-size: 10px; color: var(--text-dim);
+  }
+  .share-btn {
+    font-size: 10px; color: var(--accent); font-weight: 600;
+    cursor: pointer; padding: 4px 10px; border-radius: 10px;
+    background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.1);
+    transition: all 0.15s; letter-spacing: 0.5px;
+  }
+  .share-btn:hover { background: rgba(244,63,94,0.12); }
+
+  /* ===== Score Baseline ===== */
+  .score-baseline {
+    align-self: center; max-width: 100%;
+    background: rgba(255,255,255,0.015); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px;
+    margin: 6px 0; animation: msgIn 0.45s ease-out both;
+  }
+  .score-baseline .sb-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  .score-baseline .sb-title { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+
+  .baseline-bar {
+    height: 6px; background: rgba(255,255,255,0.04);
+    border-radius: 3px; position: relative; margin: 12px 0;
+  }
+  .baseline-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #4ade80 0%, #f5a623 50%, var(--accent) 100%);
+    transition: width 0.8s ease-out;
+  }
+  .baseline-marker {
+    position: absolute; top: -5px; transform: translateX(-50%);
+    width: 14px; height: 14px; background: #fff; border-radius: 50%;
+    border: 2px solid var(--accent); box-shadow: 0 0 8px rgba(244,63,94,0.4);
+    transition: left 0.8s ease-out;
+  }
+  .baseline-labels {
+    display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim);
+  }
+
+  /* ===== Tagline Card ===== */
+  .tagline {
+    align-self: center; text-align: center; padding: 20px 12px;
+    animation: msgIn 0.5s ease-out both;
+  }
+  .tagline .big { font-size: 20px; font-weight: 900; color: var(--text-bubble); line-height: 1.8; }
+  .tagline .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  /* ===== Date Card ===== */
+  .date-badge {
+    align-self: center; background: var(--accent);
+    text-align: center; padding: 24px 28px; border-radius: 20px;
+    box-shadow: 0 10px 36px rgba(244,63,94,0.3);
+    animation: msgIn 0.5s ease-out both;
+  }
+  .date-badge .big { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+  .date-badge .sub { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 4px; letter-spacing: 2px; }
+
+  /* ===== Typing ===== */
+  .typing {
+    display: flex; gap: 5px; padding: 12px 16px; align-items: center;
+    align-self: flex-start;
+  }
+  .typing span {
+    width: 7px; height: 7px; background: #555; border-radius: 50%;
+    animation: bounce 1.4s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{opacity:0.3;transform:translateY(0)} 30%{opacity:1;transform:translateY(-6px)} }
+
+  /* ===== Input Bar ===== */
+  .input-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px 12px; flex-shrink: 0;
+    border-top: 1px solid var(--border);
+  }
+  .quick-chips {
+    display: flex; gap: 6px; padding: 0 14px 6px; flex-shrink: 0; overflow-x: auto;
+  }
+  .quick-chips::-webkit-scrollbar { height: 0; }
+  .quick-chip {
+    font-size: 11px; padding: 6px 14px; border-radius: 14px; white-space: nowrap;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    color: var(--text-mid); cursor: pointer; font-family: inherit;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .quick-chip:hover { background: rgba(244,63,94,0.06); border-color: rgba(244,63,94,0.15); }
+
+  .input-field {
+    flex: 1; background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 20px;
+    padding: 10px 16px; color: #bbb; font-size: 13px;
+    font-family: inherit; outline: none;
+  }
+  .input-field::placeholder { color: #333; }
+  .send-btn {
+    width: 38px; height: 38px; background: var(--accent); border: none;
+    border-radius: 14px; color: #fff; font-size: 14px; cursor: pointer;
+    flex-shrink: 0; box-shadow: 0 4px 12px rgba(244,63,94,0.3);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s;
+  }
+  .send-btn:hover { transform: scale(1.04); }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+    background: rgba(244,63,94,0.9); color: #fff; padding: 8px 18px;
+    border-radius: 16px; font-size: 12px; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s; z-index: 20; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* Controls */
+  .controls { position: fixed; bottom: 30px; right: 30px; display: flex; gap: 10px; z-index: 100; }
+  .controls button { padding: 12px 24px; border: none; border-radius: 12px; font-size: 13px; font-family: inherit; cursor: pointer; font-weight: 700; }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(244,63,94,0.3); }
+  .btn-ghost { background: rgba(255,255,255,0.06); color: #aaa; border: 1px solid rgba(255,255,255,0.08); }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <!-- Countdown -->
+  <div class="countdown-banner">
+    ⏰ 距高考出分日还有 <span class="countdown-number">12</span> 天 — 你们的分数还能再装几天
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-avatar">🎓</div>
+    <div class="header-info">
+      <div class="header-name">高考毒舌助手</div>
+      <div class="header-subtitle">别的AI帮你算分，我帮你认清自己</div>
+    </div>
+    <div class="header-roast-level">
+      <span>🌶️</span><span>🌶️</span><span>🌶️</span><span style="opacity:0.25">🌶️</span><span style="opacity:0.25">🌶️</span>
+      <div class="rl-text">毒舌 Lv.3</div>
+    </div>
+  </div>
+
+  <!-- Quick chips -->
+  <div class="quick-chips">
+    <div class="quick-chip" onclick="quickScore('625')">625 分 · 计算机</div>
+    <div class="quick-chip" onclick="quickScore('580')">580 分 · 医学</div>
+    <div class="quick-chip" onclick="quickScore('430')">430 分 · 随便看看</div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat" id="chat"></div>
+
+  <!-- Input -->
+  <div class="input-bar">
+    <input class="input-field" type="text" placeholder="输入分数 + 意向方向...">
+    <button class="send-btn">↑</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">📸 截图卡片已生成</div>
+</div>
+
+<div class="controls">
+  <button class="btn-ghost" onclick="location.reload()">↻ 重播</button>
+  <button class="btn-primary" onclick="startDemo()">▶ 开始演示</button>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const toast = document.getElementById('toast');
+
+function sd() { chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' }); }
+
+function toastShow() {
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function addUser(text) {
+  const w = document.createElement('div'); w.className = 'msg user';
+  const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
+  w.appendChild(b); chat.appendChild(w); sd();
+}
+
+function addTyping() {
+  const w = document.createElement('div'); w.className = 'typing';
+  w.innerHTML = '<span></span><span></span><span></span>';
+  chat.appendChild(w); sd(); return w;
+}
+
+function addRoastCard(prefix, bodyHtml, roastLevel) {
+  const peppers = ['🌶️','🌶️','🌶️','🌶️','🌶️'];
+  const meter = peppers.map((p,i) =>
+    `<span class="pepper ${i >= roastLevel ? 'off' : ''}">${p}</span>`
+  ).join('');
+
+  const w = document.createElement('div'); w.className = 'roast-card';
+  w.innerHTML = `
+    <div class="roast-card-header">
+      <span class="icon">😈</span>
+      <span class="label">${prefix || '毒舌诊断'}</span>
+      <div class="roast-meter">${meter}</div>
+    </div>
+    <div class="roast-card-body">${bodyHtml}</div>
+    <div class="roast-card-footer">
+      <span class="time">刚刚</span>
+      <span class="share-btn" onclick="event.stopPropagation();toastShow()">📸 分享截图</span>
+    </div>
+  `;
+  chat.appendChild(w); sd();
+}
+
+function addBaseline(score) {
+  const pct = Math.min(100, Math.max(0, (score - 300) / 450 * 100));
+  const w = document.createElement('div'); w.className = 'score-baseline';
+  w.innerHTML = `
+    <div class="sb-label">📏 你的分数位置</div>
+    <div class="sb-title">${score} 分在广东物理类中的大致区间</div>
+    <div class="baseline-bar">
+      <div class="baseline-fill" style="width:${pct}%"></div>
+      <div class="baseline-marker" style="left:${pct}%"></div>
+    </div>
+    <div class="baseline-labels">
+      <span>300</span><span>450<br>本科线</span><span>550</span><span>650</span><span>750</span>
+    </div>
+  `;
+  chat.appendChild(w); sd();
+
+  // Animate
+  setTimeout(() => {
+    const fill = w.querySelector('.baseline-fill');
+    const marker = w.querySelector('.baseline-marker');
+    if (fill) fill.style.width = pct + '%';
+    if (marker) marker.style.left = pct + '%';
+  }, 100);
+}
+
+function addAnalysis(prefix, bodyHtml) {
+  const w = document.createElement('div'); w.className = 'msg ai';
+  const b = document.createElement('div'); b.className = 'bubble';
+  b.innerHTML = (prefix ? `<div class="prefix">${prefix}</div>` : '') + bodyHtml;
+  w.appendChild(b); chat.appendChild(w); sd();
+}
+
+function addTagline(main, sub) {
+  const w = document.createElement('div'); w.className = 'tagline';
+  w.innerHTML = `<div class="big">${main}</div>${sub ? `<div class="sub">${sub}</div>` : ''}`;
+  chat.appendChild(w); sd();
+}
+
+function addDate(main, sub) {
+  const w = document.createElement('div'); w.className = 'date-badge';
+  w.innerHTML = `<div class="big">${main}</div>${sub ? `<div class="sub">${sub}</div>` : ''}`;
+  chat.appendChild(w); sd();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function quickScore(s) {
+  document.querySelector('.input-field').value = s;
+  document.querySelector('.send-btn').click();
+}
+
+async function startDemo() {
+  chat.innerHTML = '';
+
+  // Sequence
+  const steps = [
+    { d: 400,  fn: () => addUser('广东 · 物理类 · 625分 · 想学计算机') },
+    { d: 700,  act: 'type', dur: 1200 },
+    { d: 0,    fn: () => addBaseline(625) },
+    { d: 600,  act: 'type', dur: 800 },
+    { d: 0,    fn: () => addRoastCard('😈 毒舌时间',
+      '<span style="color:var(--accent);font-weight:600;">625分想冲华科计算机？</span>你知道去年华科计算机在广东多少分吗？<span style="color:var(--accent);font-weight:600;">651</span>。<br>你这分数连门卫的微信都加不上。') },
+    { d: 0,    fn: () => addRoastCard('',
+      '深大计算机也别做梦了。人家虽然是双非，<span style="color:var(--accent);font-weight:600;">分数线比你家门口985还高</span>。', 2) },
+    { d: 0,    fn: () => addRoastCard('',
+      '不过你比我预期好一点点——至少没说想冲清华。', 1) },
+    { d: 800,  act: 'type', dur: 1000 },
+    { d: 0,    fn: () => addAnalysis('📊 现实一点',
+      '根据<span style="color:var(--accent);font-weight:600;">2025年广东物理类</span>数据：<br><br>' +
+      '🔴 <b>冲刺</b>　华南理工 · 软件工程 <span style="color:var(--accent);font-weight:600;">638</span><br>' +
+      '　　　　　电子科大 · 计科 <span style="color:var(--accent);font-weight:600;">642</span><br><br>' +
+      '🟡 <b>稳妥</b>　哈工大深圳 · 智能科学 <span style="color:var(--accent);font-weight:600;">628</span><br>' +
+      '　　　　　西电 · 计科 <span style="color:var(--accent);font-weight:600;">620</span><br><br>' +
+      '🟢 <b>保底</b>　广工 · 计科 <span style="color:var(--accent);font-weight:600;">598</span>') },
+    { d: 1000, fn: () => addAnalysis('🤖 AI自首',
+      '以上数据来自公开渠道，我是AI不是算命先生。<br>最终决定问你自己和你爸妈——<br><span style="color:var(--accent);font-weight:600;">但别问你二舅，他只会说「学计算机好啊出来修电脑」。</span>') },
+    { d: 1500, fn: () => addTagline('别的AI帮你算分<br>我帮你认清自己。', '顺便让你笑出声。') },
+    { d: 1500, fn: () => addDate('6月23日 出分日<br>准时上线', '带着你的分数来。') },
+  ];
+
+  for (const s of steps) {
+    await sleep(s.d || 400);
+    if (s.fn) s.fn();
+    if (s.act === 'type') {
+      const t = addTyping();
+      await sleep(s.dur);
+      t.remove();
+    }
+  }
+
+  // Show toast at end
+  setTimeout(toastShow, 600);
+}
+
+setTimeout(startDemo, 800);
+</script>
+</body>
+</html>

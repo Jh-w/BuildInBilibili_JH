@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高考毒舌助手 · 法庭判决流</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-page: #0a0a14;
+    --bg-phone: #0e0e1a;
+    --accent: #f43f5e;
+    --text: #e8e8f0;
+    --text-dim: #7777a0;
+    --text-mid: #aaaacc;
+    --border: rgba(255,255,255,0.06);
+    --verdict-bg: #0d0d1f;
+  }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg-page);
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 20px;
+  }
+
+  .phone {
+    width: 390px; height: 844px;
+    background: var(--bg-phone);
+    border-radius: 44px; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 0 3px #1a1a30, 0 0 0 6px #121224, 0 0 0 8px #0a0a18, 0 30px 80px rgba(0,0,0,0.7);
+    position: relative;
+  }
+
+  /* Status */
+  .status-bar {
+    background: rgba(244,63,94,0.06); color: var(--accent);
+    text-align: center; padding: 7px 20px; font-size: 10px; font-weight: 600;
+    flex-shrink: 0; border-bottom: 1px solid rgba(244,63,94,0.08);
+    letter-spacing: 1.5px;
+  }
+
+  /* Header */
+  .header {
+    padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0; border-bottom: 1px solid var(--border);
+  }
+  .header-icon {
+    width: 42px; height: 42px; background: var(--accent);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; box-shadow: 0 4px 14px rgba(244,63,94,0.2);
+  }
+  .header-text h3 { color: var(--text); font-size: 15px; font-weight: 700; }
+  .header-text span { color: var(--text-dim); font-size: 11px; }
+
+  /* Scroll */
+  .content {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .content::-webkit-scrollbar { width: 2px; }
+  .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 2px; }
+
+  /* ============ INPUT ============ */
+  @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .input-step { animation: in 0.4s ease-out both; }
+
+  .court-intro {
+    text-align: center; padding: 20px 0;
+  }
+  .court-intro .gavel {
+    font-size: 48px; margin-bottom: 8px; animation: bang 0.4s ease-out;
+  }
+  @keyframes bang { 0% { transform: rotate(-30deg) scale(0.5); } 60% { transform: rotate(5deg) scale(1.15); } 100% { transform: rotate(0) scale(1); } }
+  .court-intro h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px; color: var(--text); font-weight: 900;
+    letter-spacing: 3px;
+  }
+  .court-intro .sub {
+    font-size: 10px; color: var(--text-dim); margin-top: 4px; letter-spacing: 2px;
+  }
+
+  .form-label {
+    font-size: 11px; color: var(--accent); font-weight: 700;
+    margin-bottom: 6px; letter-spacing: 1px;
+  }
+  .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .form-chip {
+    flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px;
+    color: var(--text-mid); font-size: 12px; text-align: center;
+    font-family: inherit; cursor: pointer; transition: all 0.15s;
+  }
+  .form-chip.active {
+    background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.25); color: var(--accent);
+  }
+  .score-input {
+    width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+    color: var(--text); font-size: 28px; font-weight: 900;
+    text-align: center; font-family: inherit; outline: none; letter-spacing: 4px;
+  }
+  .score-input::placeholder { color: #333; font-size: 14px; letter-spacing: 0; }
+  .score-input:focus { border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.04); }
+
+  .submit-btn {
+    width: 100%; background: var(--accent); border: none; border-radius: 12px;
+    padding: 14px; color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 8px; font-family: inherit;
+    box-shadow: 0 4px 20px rgba(244,63,94,0.3);
+    transition: transform 0.15s;
+  }
+  .submit-btn:hover { transform: scale(1.01); }
+  .submit-btn:disabled { opacity: 0.4; transform: none; }
+
+  /* ============ LOADING ============ */
+  .loading { text-align: center; padding: 30px; display: none; }
+  .loading.active { display: block; }
+  .court-seal {
+    width: 60px; height: 60px; border: 2px solid var(--accent);
+    border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 10px; font-weight: 900; opacity: 0.5;
+    font-family: 'Noto Serif SC', serif; letter-spacing: 2px; text-align: center; line-height: 1.4;
+    animation: spin 3s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text-dim); font-size: 12px; letter-spacing: 2px; }
+
+  /* ============ VERDICT ============ */
+  .verdict { display: none; animation: in 0.5s ease-out both; }
+  .verdict.show { display: block; }
+
+  /* Red header */
+  .verdict-red-header {
+    text-align: center; padding: 20px 10px 10px;
+    border-bottom: 3px solid var(--accent);
+    margin-bottom: 16px;
+  }
+  .verdict-red-header .court-name {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 13px; color: var(--accent); font-weight: 900;
+    letter-spacing: 4px; line-height: 2;
+  }
+  .verdict-red-header .doc-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 22px; color: var(--text); font-weight: 900;
+    letter-spacing: 6px; margin-top: 6px;
+  }
+
+  .verdict-no {
+    text-align: right; font-size: 10px; color: var(--text-dim);
+    letter-spacing: 1px; margin-bottom: 16px;
+  }
+
+  .verdict-parties {
+    background: rgba(255,255,255,0.015); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;
+  }
+  .verdict-parties .row {
+    display: flex; font-size: 12px; padding: 3px 0;
+    color: var(--text-mid);
+  }
+  .verdict-parties .label {
+    width: 70px; flex-shrink: 0; color: var(--text-dim); font-size: 11px;
+  }
+
+  .verdict-body { font-size: 13px; line-height: 2.2; color: var(--text); }
+
+  .verdict-section {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 14px; font-weight: 900; color: var(--accent);
+    margin: 18px 0 8px; letter-spacing: 2px;
+    text-align: center;
+  }
+
+  .verdict-quote {
+    border-left: 2px solid var(--accent);
+    padding-left: 12px; color: var(--text-mid);
+    font-style: italic; margin: 10px 0;
+  }
+
+  .verdict-table {
+    width: 100%; border-collapse: collapse; margin: 8px 0;
+  }
+  .verdict-table th {
+    text-align: left; font-size: 10px; color: var(--text-dim);
+    padding: 6px 10px; letter-spacing: 1px; font-weight: 500;
+    border-bottom: 1px solid rgba(244,63,94,0.1);
+  }
+  .verdict-table td {
+    padding: 8px 10px; font-size: 13px; color: var(--text);
+    border-bottom: 1px solid rgba(255,255,255,0.03); font-weight: 500;
+  }
+  .verdict-table tr:last-child td { border: none; }
+  .vd-r { color: var(--accent); }
+  .vd-y { color: #f5a623; }
+  .vd-g { color: #4ade80; }
+  .score-r { text-align: right; color: var(--accent); font-weight: 700; }
+
+  .signature-area {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-top: 28px; padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .signature {
+    text-align: right; font-size: 13px; color: var(--text);
+  }
+  .signature .name { font-weight: 900; font-size: 16px; letter-spacing: 2px; }
+  .signature .title { font-size: 10px; color: var(--text-dim); }
+  .seal-stamp {
+    width: 64px; height: 64px; border: 2.5px solid var(--accent);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 11px; font-weight: 900;
+    transform: rotate(-15deg); opacity: 0.6;
+    font-family: 'Noto Serif SC', serif; letter-spacing: 2px;
+    text-align: center; line-height: 1.4;
+  }
+
+  .disclaimer {
+    font-size: 10px; color: var(--text-dim); text-align: center;
+    margin-top: 16px; font-style: italic;
+  }
+
+  /* Input bar */
+  .input-bar {
+    display: flex; gap: 8px; padding: 10px 16px 14px;
+    flex-shrink: 0; border-top: 1px solid var(--border);
+  }
+  .input-bar input {
+    flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 18px; padding: 10px 16px; color: #bbb; font-size: 13px;
+    font-family: inherit; outline: none;
+  }
+  .input-bar input::placeholder { color: #333; }
+  .input-bar .send {
+    width: 36px; height: 36px; background: var(--accent); border: none;
+    border-radius: 12px; color: #fff; font-size: 14px; cursor: pointer;
+    flex-shrink: 0; box-shadow: 0 4px 12px rgba(244,63,94,0.3);
+  }
+
+  /* Controls */
+  .controls { position: fixed; bottom: 30px; right: 30px; display: flex; gap: 10px; z-index: 100; }
+  .controls button { padding: 12px 24px; border: none; border-radius: 12px; font-size: 13px; font-family: inherit; cursor: pointer; font-weight: 700; }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(244,63,94,0.3); }
+  .btn-ghost { background: rgba(255,255,255,0.06); color: #aaa; border: 1px solid rgba(255,255,255,0.08); }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status-bar">⚖️ 高考志愿裁判庭 · 现在开庭</div>
+  <div class="header">
+    <div class="header-icon">⚖️</div>
+    <div class="header-text">
+      <h3>高考志愿裁判庭</h3>
+      <span>审判长：毒舌AI · 你的分数是呈堂证供</span>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="input-step" id="step-input">
+      <div class="court-intro">
+        <div class="gavel">🔨</div>
+        <h2>请提交呈堂证供</h2>
+        <div class="sub">你的分数将接受毒舌审判</div>
+      </div>
+      <div class="form-label">📋 当事人信息</div>
+      <div class="form-row">
+        <div class="form-chip active" onclick="selectChip(this)">广东</div>
+        <div class="form-chip" onclick="selectChip(this)">物理类</div>
+        <div class="form-chip" onclick="selectChip(this)">计算机</div>
+      </div>
+      <input class="score-input" type="text" id="score" placeholder="输入分数 (如 625)" maxlength="3" inputmode="numeric">
+      <button class="submit-btn" onclick="startTrial()">🔨 开庭审理</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="court-seal">公正<br>裁决</div>
+      <div class="loading-text">合议庭评议中...</div>
+    </div>
+
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <div class="input-bar">
+    <input type="text" placeholder="不服？换分数上诉...">
+    <button class="send">↑</button>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn-ghost" onclick="location.reload()">↻ 重播</button>
+  <button class="btn-primary" onclick="autoDemo()">▶ 自动演示</button>
+</div>
+
+<script>
+function selectChip(el) {
+  el.parentElement.querySelectorAll('.form-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function startTrial() {
+  const score = document.getElementById('score').value;
+  if (!score) return;
+  document.getElementById('step-input').style.display = 'none';
+  const loading = document.getElementById('loading');
+  loading.classList.add('active');
+
+  setTimeout(() => {
+    loading.classList.remove('active');
+    showVerdict(score);
+  }, 2200);
+}
+
+function showVerdict(score) {
+  const v = document.getElementById('verdict');
+  const num = parseInt(score);
+  const caseId = (Date.now() % 100000).toString().padStart(5,'0');
+
+  let finding, opinion, ruling;
+  if (num >= 650) {
+    finding = `<p>经本庭查明，当事人以<span style="color:var(--accent);font-weight:700;">${score}分</span>之成绩，涉嫌「自我感觉良好」，特此开庭审理。</p>
+      <p>经调取<span style="color:var(--accent);font-weight:700;">广东省2025年物理类</span>录取数据，事实如下：</p>`;
+    opinion = `<p>被申请人声称要报考<span style="color:var(--accent);font-weight:700;">华科计算机</span>——经查，该专业去年录取线为<span style="color:var(--accent);font-weight:700;">651分</span>。</p>
+      <p><span style="color:var(--text-dim);">（旁听席传来一声冷笑）</span></p>
+      <p>本庭认可被申请人确实取得了不错的成绩，但对其自我认知提出质疑：<span style="color:var(--accent);font-weight:700;">区区${score}分，有什么资格不紧张？</span></p>
+      <p>不过，被申请人尚未说出「想冲清华」，本庭酌情从宽处理。</p>`;
+    ruling = `<tr><td class="vd-r">🔴 冲刺</td><td>清华 · 计算机</td><td class="score-r">682</td></tr>
+      <tr><td class="vd-r">🔴 冲刺</td><td>华科 · 计算机</td><td class="score-r">651</td></tr>
+      <tr><td class="vd-y">🟡 稳妥</td><td>北航 · 软件工程</td><td class="score-r">${num+3}</td></tr>
+      <tr><td class="vd-y">🟡 稳妥</td><td>电子科大 · 计科</td><td class="score-r">642</td></tr>
+      <tr><td class="vd-g">🟢 保底</td><td>哈工大深圳 · 智能科学</td><td class="score-r">628</td></tr>`;
+  } else if (num >= 600) {
+    finding = `<p>经本庭查明，当事人以<span style="color:var(--accent);font-weight:700;">${score}分</span>之成绩，提出「想学计算机」之诉求，涉嫌对自身实力缺乏清醒认知。</p>
+      <p>经调取<span style="color:var(--accent);font-weight:700;">广东省2025年物理类</span>录取数据，事实如下：</p>`;
+    opinion = `<p>被申请人声称要报考<span style="color:var(--accent);font-weight:700;">华科计算机</span>。经查，该专业去年录取线为<span style="color:var(--accent);font-weight:700;">651分</span>。本庭认为，被申请人与华科门卫互加微信的概率，小于其数学最后一道大题做对的概率。</p>
+      <p>被申请人又提出<span style="color:var(--accent);font-weight:700;">深大计算机</span>作为替代方案。经查，深大虽是双非，但<span style="color:var(--accent);font-weight:700;">计算机类录取线比部分985还高</span>。本庭对此表示：醒醒。</p>
+      <p>不过，被申请人至少比那些喊「清华北大随便挑」的人诚实。本庭对该诚实态度予以肯定。</p>`;
+    ruling = `<tr><td class="vd-r">🔴 冲刺</td><td>华南理工 · 软件工程</td><td class="score-r">638</td></tr>
+      <tr><td class="vd-r">🔴 冲刺</td><td>电子科大 · 计科</td><td class="score-r">642</td></tr>
+      <tr><td class="vd-y">🟡 稳妥</td><td>哈工大深圳 · 智能科学</td><td class="score-r">628</td></tr>
+      <tr><td class="vd-y">🟡 稳妥</td><td>西电 · 计科</td><td class="score-r">620</td></tr>
+      <tr><td class="vd-g">🟢 保底</td><td>广工 · 计科</td><td class="score-r">598</td></tr>`;
+  } else {
+    finding = `<p>经本庭查明，当事人以<span style="color:var(--accent);font-weight:700;">${score}分</span>之成绩提出志愿申请。</p>
+      <p>本庭在开庭前已做审前评估，结论如下：</p>`;
+    opinion = `<p><span style="color:var(--text-dim);">（审判长收起法槌，语气转为温和）</span></p>
+      <p>本庭拒绝在此案中行使毒舌权。高考分数不定义你的人生。</p>
+      <p>但本庭仍须履行职责，给出务实建议：<span style="color:var(--accent);font-weight:700;">专科里的好专业，胜过本科天坑专业。这不是安慰，这是数据。</span></p>`;
+    ruling = `<tr><td class="vd-r">🔴 冲刺</td><td>广工 · 计科</td><td class="score-r">598</td></tr>
+      <tr><td class="vd-y">🟡 稳妥</td><td>深职大 · 人工智能</td><td class="score-r">${num+10}</td></tr>
+      <tr><td class="vd-y">🟡 稳妥</td><td>广轻工 · 软件技术</td><td class="score-r">${num+5}</td></tr>
+      <tr><td class="vd-g">🟢 保底</td><td>省内公办专科</td><td class="score-r">${num-10}</td></tr>`;
+  }
+
+  v.innerHTML = `
+    <div class="verdict-red-header">
+      <div class="court-name">中华人民共和国高考志愿裁判庭</div>
+      <div class="doc-title">判 决 书</div>
+    </div>
+
+    <div class="verdict-no">〔2026〕毒裁字第 ${caseId} 号</div>
+
+    <div class="verdict-parties">
+      <div class="row"><span class="label">申请人</span>匿名考生 · ${score}分 · 广东物理类</div>
+      <div class="row"><span class="label">被申请人</span>华科、深大、电子科大等高校（缺席审理）</div>
+      <div class="row"><span class="label">审判长</span>毒舌AI · 高考志愿裁判庭终身法官</div>
+    </div>
+
+    <div class="verdict-body">
+      <div class="verdict-section">经 审 理 查 明</div>
+      ${finding}
+
+      <div class="verdict-section">本 院 认 为</div>
+      ${opinion}
+
+      <div class="verdict-section">判 决 如 下</div>
+      <table class="verdict-table">
+        <thead><tr><th></th><th>院校 · 专业</th><th>参考录取分</th></tr></thead>
+        <tbody>${ruling}</tbody>
+      </table>
+    </div>
+
+    <div class="signature-area">
+      <div class="seal-stamp">毒舌<br>裁判庭</div>
+      <div class="signature">
+        <div class="name">审判长 毒舌AI</div>
+        <div class="title">高考志愿裁判庭 · 终身法官</div>
+        <div style="margin-top:4px;font-size:10px;color:var(--text-dim);">2026年6月23日</div>
+      </div>
+    </div>
+
+    <div class="disclaimer">* 本判决书数据来源于公开渠道汇总，仅供参考。<br>如不服本判决，可以问你爸妈——但别问你二舅。</div>
+  `;
+
+  v.classList.add('show');
+  document.getElementById('content').scrollTo({ top: document.getElementById('content').scrollHeight, behavior: 'smooth' });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function autoDemo() {
+  document.getElementById('content').innerHTML = document.getElementById('step-input').outerHTML + document.getElementById('loading').outerHTML + '<div class="verdict" id="verdict"></div>';
+  document.getElementById('score').value = '625';
+  document.getElementById('step-input').style.display = 'block';
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('verdict').classList.remove('show');
+
+  await sleep(1500);
+  startTrial();
+}
+</script>
+</body>
+</html>

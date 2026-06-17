@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高考毒舌助手 · 诊断报告流</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-page: #0a0a14;
+    --bg-phone: #0e0e1a;
+    --bg-report: #111122;
+    --accent: #f43f5e;
+    --accent-dim: rgba(244,63,94,0.08);
+    --text: #e8e8f0;
+    --text-dim: #7777a0;
+    --text-mid: #aaaacc;
+    --border: rgba(255,255,255,0.06);
+    --table-row: rgba(244,63,94,0.04);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg-page);
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 20px;
+  }
+
+  .phone {
+    width: 390px; height: 844px;
+    background: var(--bg-phone);
+    border-radius: 44px; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow:
+      0 0 0 3px #1a1a30,
+      0 0 0 6px #121224,
+      0 0 0 8px #0a0a18,
+      0 30px 80px rgba(0,0,0,0.7);
+    position: relative;
+  }
+
+  /* Status */
+  .status-bar {
+    background: rgba(244,63,94,0.06);
+    color: var(--accent); text-align: center;
+    padding: 7px 20px; font-size: 10.5px; font-weight: 600;
+    flex-shrink: 0; border-bottom: 1px solid rgba(244,63,94,0.08);
+    letter-spacing: 1px;
+  }
+
+  /* Header */
+  .header {
+    padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0; border-bottom: 1px solid var(--border);
+  }
+  .header-icon {
+    width: 42px; height: 42px; background: var(--accent);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; box-shadow: 0 4px 14px rgba(244,63,94,0.2);
+  }
+  .header-text h3 { color: var(--text); font-size: 15px; font-weight: 700; }
+  .header-text span { color: var(--text-dim); font-size: 11px; }
+
+  /* Scroll */
+  .content {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .content::-webkit-scrollbar { width: 2px; }
+  .content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 2px; }
+
+  /* ============ INPUT STEP ============ */
+  .input-step {
+    animation: in 0.4s ease-out both;
+  }
+  @keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .form-label {
+    font-size: 11px; color: var(--accent); font-weight: 700;
+    margin-bottom: 6px; letter-spacing: 1px;
+  }
+  .form-row {
+    display: flex; gap: 8px; margin-bottom: 8px;
+  }
+  .form-chip {
+    flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px;
+    color: var(--text-mid); font-size: 12px; text-align: center;
+    font-family: inherit; cursor: pointer; transition: all 0.15s;
+  }
+  .form-chip.active {
+    background: rgba(244,63,94,0.12); border-color: rgba(244,63,94,0.3); color: var(--accent);
+  }
+  .form-chip:hover { border-color: rgba(255,255,255,0.12); }
+  .score-input {
+    width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+    color: var(--text); font-size: 28px; font-weight: 900;
+    text-align: center; font-family: inherit; outline: none;
+    letter-spacing: 4px;
+  }
+  .score-input::placeholder { color: #333; font-size: 14px; letter-spacing: 0; }
+  .score-input:focus { border-color: rgba(244,63,94,0.3); background: rgba(244,63,94,0.04); }
+
+  .submit-btn {
+    width: 100%; background: var(--accent); border: none; border-radius: 12px;
+    padding: 14px; color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 8px; font-family: inherit;
+    box-shadow: 0 4px 20px rgba(244,63,94,0.3);
+    transition: transform 0.15s;
+  }
+  .submit-btn:hover { transform: scale(1.01); }
+  .submit-btn:disabled { opacity: 0.4; transform: none; }
+
+  /* ============ LOADING ============ */
+  .loading {
+    text-align: center; padding: 30px; display: none;
+  }
+  .loading.active { display: block; }
+  .scan-line {
+    height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    width: 80%; margin: 20px auto; border-radius: 1px;
+    animation: scan 1.5s ease-in-out infinite;
+  }
+  @keyframes scan { 0% { width: 0%; opacity: 0; } 50% { width: 80%; opacity: 1; } 100% { width: 0%; opacity: 0; } }
+  .loading-text { color: var(--text-dim); font-size: 12px; letter-spacing: 2px; }
+
+  /* ============ REPORT ============ */
+  .report {
+    display: none; animation: in 0.5s ease-out both;
+  }
+  .report.show { display: block; }
+
+  /* Report header */
+  .report-title {
+    text-align: center; padding: 10px 0; position: relative;
+  }
+  .report-title h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 20px; color: var(--text); font-weight: 900;
+    letter-spacing: 3px;
+    border-bottom: 1px solid rgba(244,63,94,0.2);
+    padding-bottom: 10px; margin-bottom: 8px;
+  }
+  .report-title .dept {
+    font-size: 10px; color: var(--text-dim); letter-spacing: 4px;
+  }
+
+  /* Patient info */
+  .info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    padding: 14px; background: rgba(255,255,255,0.02);
+    border-radius: 12px; border: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .info-item label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+  .info-item .val { font-size: 15px; color: var(--text); font-weight: 700; }
+
+  /* Diagnosis section */
+  .section-label {
+    font-size: 10px; color: var(--accent); font-weight: 700;
+    letter-spacing: 3px; margin: 16px 0 8px;
+    padding-left: 10px; border-left: 2px solid var(--accent);
+  }
+  .diagnosis-box {
+    background: rgba(244,63,94,0.05); border: 1px solid rgba(244,63,94,0.1);
+    border-radius: 12px; padding: 14px;
+  }
+  .diagnosis-box p {
+    color: var(--text); font-size: 13px; line-height: 2;
+    margin-bottom: 6px;
+  }
+  .diagnosis-box .em { color: var(--accent); font-weight: 700; }
+
+  /* Table */
+  .data-table {
+    width: 100%; border-collapse: collapse; margin: 8px 0;
+  }
+  .data-table th {
+    text-align: left; font-size: 10px; color: var(--text-dim);
+    padding: 8px 10px; letter-spacing: 1px; font-weight: 500;
+    border-bottom: 1px solid rgba(244,63,94,0.1);
+  }
+  .data-table td {
+    padding: 10px; font-size: 13px; color: var(--text);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-weight: 500;
+  }
+  .data-table tr:last-child td { border: none; }
+  .data-table .tier { font-size: 10px; width: 36px; }
+  .data-table .tier-r { color: var(--accent); }
+  .data-table .tier-y { color: #f5a623; }
+  .data-table .tier-g { color: #4ade80; }
+  .data-table .score-cell { text-align: right; color: var(--accent); font-weight: 700; }
+
+  /* Stamp */
+  .stamp-area {
+    display: flex; justify-content: flex-end; margin-top: 20px;
+    position: relative;
+  }
+  .stamp {
+    width: 80px; height: 80px;
+    border: 3px solid var(--accent);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 13px; font-weight: 900;
+    transform: rotate(-12deg); opacity: 0.7;
+    font-family: 'Noto Serif SC', serif;
+    letter-spacing: 2px;
+    text-align: center; line-height: 1.4;
+  }
+  .disclaimer {
+    font-size: 10px; color: var(--text-dim); text-align: right;
+    margin-top: 8px; font-style: italic; letter-spacing: 0.5px;
+  }
+
+  /* Input bar */
+  .input-bar {
+    display: flex; gap: 8px; padding: 10px 16px 14px;
+    flex-shrink: 0; border-top: 1px solid var(--border);
+  }
+  .input-bar input {
+    flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 18px; padding: 10px 16px; color: #bbb; font-size: 13px;
+    font-family: inherit; outline: none;
+  }
+  .input-bar input::placeholder { color: #333; }
+  .input-bar .send {
+    width: 36px; height: 36px; background: var(--accent); border: none;
+    border-radius: 12px; color: #fff; font-size: 14px; cursor: pointer;
+    flex-shrink: 0; box-shadow: 0 4px 12px rgba(244,63,94,0.3);
+  }
+
+  /* Controls */
+  .controls { position: fixed; bottom: 30px; right: 30px; display: flex; gap: 10px; z-index: 100; }
+  .controls button { padding: 12px 24px; border: none; border-radius: 12px; font-size: 13px; font-family: inherit; cursor: pointer; font-weight: 700; }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(244,63,94,0.3); }
+  .btn-ghost { background: rgba(255,255,255,0.06); color: #aaa; border: 1px solid rgba(255,255,255,0.08); }
+
+  /* Cursor blink */
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status-bar">🔬 毒舌诊断科 · 门诊系统</div>
+  <div class="header">
+    <div class="header-icon">🏥</div>
+    <div class="header-text">
+      <h3>高考毒舌诊断科</h3>
+      <span>主任医师：AI · 专治分数幻觉</span>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="input-step" id="step-input">
+      <div class="form-label">📋 挂号信息</div>
+      <div class="form-row">
+        <div class="form-chip active" onclick="selectChip(this)">广东</div>
+        <div class="form-chip" onclick="selectChip(this)">物理类</div>
+        <div class="form-chip" onclick="selectChip(this)">计算机</div>
+      </div>
+      <input class="score-input" type="text" id="score" placeholder="输入分数 (如 625)" maxlength="3" inputmode="numeric">
+      <button class="submit-btn" onclick="startDiagnosis()">🔍 开始诊断</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div style="font-size:11px;color:var(--text-dim);letter-spacing:2px;">正在分析历年数据...</div>
+      <div class="scan-line"></div>
+      <div class="loading-text">比对 247 所院校分数线中</div>
+    </div>
+
+    <div class="report" id="report"></div>
+  </div>
+
+  <div class="input-bar">
+    <input type="text" placeholder="换个分数再查...">
+    <button class="send">↑</button>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="btn-ghost" onclick="location.reload()">↻ 重播</button>
+  <button class="btn-primary" onclick="autoDemo()">▶ 自动演示</button>
+</div>
+
+<script>
+function selectChip(el) {
+  el.parentElement.querySelectorAll('.form-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function startDiagnosis() {
+  const score = document.getElementById('score').value;
+  if (!score) return;
+  document.getElementById('step-input').style.display = 'none';
+  const loading = document.getElementById('loading');
+  loading.classList.add('active');
+
+  setTimeout(() => {
+    loading.classList.remove('active');
+    showReport(score);
+  }, 2000);
+}
+
+function showReport(score) {
+  const r = document.getElementById('report');
+  const num = parseInt(score);
+
+  let diagnosis, table;
+  if (num >= 650) {
+    diagnosis = `<p>🎯 <span class="em">${score}分</span>——你是我今天见过最像样的。</p>
+      <p>但我还是要说：别以为自己稳了。华科计算机去年<span class="em">651</span>，你也就比它低1分。1分什么概念？一道选择题的差距，就是<span class="em">985和211的区别</span>。</p>
+      <p>不过至少你没说想冲清华——这是你今天说过最聪明的话。</p>`;
+    table = `<tr><td class="tier tier-r">🔴 冲刺</td><td>清华 · 计算机</td><td class="score-cell">682</td></tr>
+      <tr><td class="tier tier-r">🔴 冲刺</td><td>华科 · 计算机</td><td class="score-cell">651</td></tr>
+      <tr><td class="tier tier-y">🟡 稳妥</td><td>北航 · 软件工程</td><td class="score-cell">${num+3}</td></tr>
+      <tr><td class="tier tier-y">🟡 稳妥</td><td>电子科大 · 计科</td><td class="score-cell">642</td></tr>
+      <tr><td class="tier tier-g">🟢 保底</td><td>哈工大深圳 · 智能科学</td><td class="score-cell">628</td></tr>`;
+  } else if (num >= 600) {
+    diagnosis = `<p>😈 <span class="em">${score}分想冲华科计算机？</span>你知道去年华科计算机在广东多少分吗？<span class="em">651</span>。你这分数连门卫的微信都加不上。</p>
+      <p>深大计算机也别做梦了。人家虽然是双非，<span class="em">分数线比你家门口985还高</span>。</p>
+      <p>不过你比我预期好一点点——至少没说想冲清华。</p>`;
+    table = `<tr><td class="tier tier-r">🔴 冲刺</td><td>华南理工 · 软件工程</td><td class="score-cell">638</td></tr>
+      <tr><td class="tier tier-r">🔴 冲刺</td><td>电子科大 · 计科</td><td class="score-cell">642</td></tr>
+      <tr><td class="tier tier-y">🟡 稳妥</td><td>哈工大深圳 · 智能科学</td><td class="score-cell">628</td></tr>
+      <tr><td class="tier tier-y">🟡 稳妥</td><td>西电 · 计科</td><td class="score-cell">620</td></tr>
+      <tr><td class="tier tier-g">🟢 保底</td><td>广工 · 计科</td><td class="score-cell">598</td></tr>`;
+  } else {
+    diagnosis = `<p>🫡 <span class="em">${score}分</span>。我先给你一个真诚的建议：别用"冲"这个词了，换"幻想"更准确。</p>
+      <p>但说真的：这个分数段你还有很多选择。<span class="em">专科里的好专业比本科天坑专业强一万倍</span>。你信我。</p>`;
+    table = `<tr><td class="tier tier-r">🔴 冲刺</td><td>广工 · 计科</td><td class="score-cell">598</td></tr>
+      <tr><td class="tier tier-y">🟡 稳妥</td><td>深职大 · 人工智能</td><td class="score-cell">${num+10}</td></tr>
+      <tr><td class="tier tier-y">🟡 稳妥</td><td>广轻工 · 软件技术</td><td class="score-cell">${num+5}</td></tr>
+      <tr><td class="tier tier-g">🟢 保底</td><td>省内公办专科 · 计科类</td><td class="score-cell">${num-10}</td></tr>`;
+  }
+
+  r.innerHTML = `
+    <div class="report-title">
+      <h2>毒舌诊断报告</h2>
+      <div class="dept">高考志愿诊断科 · 编号 GAOKAO-${score}-${Date.now().toString(36).slice(-4).toUpperCase()}</div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item"><label>患者姓名</label><div class="val">匿名考生</div></div>
+      <div class="info-item"><label>高考分数</label><div class="val" style="color:var(--accent)">${score} 分</div></div>
+      <div class="info-item"><label>省份/选科</label><div class="val">广东 · 物理类</div></div>
+      <div class="info-item"><label>意向方向</label><div class="val">计算机类</div></div>
+    </div>
+
+    <div class="section-label">😈 毒舌诊断意见</div>
+    <div class="diagnosis-box">${diagnosis}</div>
+
+    <div class="section-label">📊 冲·稳·保 处方</div>
+    <table class="data-table">
+      <thead><tr><th></th><th>院校 · 专业</th><th>参考分</th></tr></thead>
+      <tbody>${table}</tbody>
+    </table>
+
+    <div class="stamp-area">
+      <div class="stamp">毒舌<br>诊断</div>
+    </div>
+    <div class="disclaimer">* 以上数据来自公开渠道汇总，不作为最终填报依据。<br>最终决定问你自己和你爸妈——<br>但别问你二舅，他只会说「学计算机出来修电脑」。</div>
+  `;
+
+  r.classList.add('show');
+  document.getElementById('content').scrollTo({ top: document.getElementById('content').scrollHeight, behavior: 'smooth' });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function autoDemo() {
+  document.getElementById('content').innerHTML = document.getElementById('step-input').outerHTML + document.getElementById('loading').outerHTML + '<div class="report" id="report"></div>';
+  document.getElementById('score').value = '625';
+  document.getElementById('step-input').style.display = 'block';
+  document.getElementById('loading').classList.remove('active');
+  document.getElementById('report').classList.remove('show');
+
+  await sleep(1200);
+  startDiagnosis();
+}
+
+// Scrollbar
+document.getElementById('content').scrollTop = 0;
+</script>
+</body>
+</html>

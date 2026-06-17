@@ -263,6 +263,9 @@
   <div class="toast" id="toast">📸 截图卡片已生成</div>
 </div>
 
+<!-- Hidden canvas for share card generation -->
+<canvas id="shareCanvas" width="600" height="800" style="display:none"></canvas>
+
 <script>
 // ── State ──
 const chat = document.getElementById('chat');
@@ -270,6 +273,7 @@ const input = document.getElementById('input');
 const sendBtn = document.getElementById('sendBtn');
 const toast = document.getElementById('toast');
 let isLoading = false;
+let lastUserMsg = '';  // for share card context
 
 // ── Countdown ──
 function updateCountdown() {
@@ -304,6 +308,147 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 1800);
 }
 
+// ── Share Card Generator ──
+function generateShareCard(aiText) {
+  const canvas = document.getElementById('shareCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = 600, H = 800;
+
+  // Clear
+  ctx.clearRect(0, 0, W, H);
+
+  // Background: dark gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0e0e22');
+  bg.addColorStop(1, '#0a0a18');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Accent line at top
+  ctx.fillStyle = '#f43f5e';
+  ctx.fillRect(0, 0, W, 3);
+
+  // ── Header ──
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 22px "Noto Sans SC", sans-serif';
+  ctx.fillText('🎓 高考毒舌助手', 40, 60);
+
+  ctx.fillStyle = '#8888a8';
+  ctx.font = '13px "Noto Sans SC", sans-serif';
+  ctx.fillText('别的AI帮你算分，我帮你认清自己', 40, 88);
+
+  // Divider
+  ctx.strokeStyle = 'rgba(244,63,94,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(W-40, 110); ctx.stroke();
+
+  // ── User question ──
+  ctx.fillStyle = '#8888a8';
+  ctx.font = '12px "Noto Sans SC", sans-serif';
+  ctx.fillText('考生提问：', 40, 140);
+
+  // User bubble
+  const userLines = wrapText(ctx, lastUserMsg, W - 160);
+  const userBubbleH = Math.max(36, userLines.length * 24 + 24);
+  ctx.fillStyle = '#4f46e5';
+  roundRect(ctx, W - 40 - Math.min(400, ctx.measureText(lastUserMsg).width + 40), 128, Math.min(400, ctx.measureText(lastUserMsg).width + 40), userBubbleH, 14);
+  ctx.fillStyle = '#eaeaef';
+  ctx.font = '14px "Noto Sans SC", sans-serif';
+  userLines.forEach((line, i) => {
+    ctx.fillText(line, W - 40 - Math.min(400, ctx.measureText(lastUserMsg).width + 40) + 20, 152 + i * 24);
+  });
+
+  // Divider
+  const userEndY = 128 + userBubbleH + 20;
+  ctx.strokeStyle = 'rgba(244,63,94,0.1)';
+  ctx.beginPath(); ctx.moveTo(40, userEndY); ctx.lineTo(W-40, userEndY); ctx.stroke();
+
+  // ── AI response ──
+  const aiStartY = userEndY + 20;
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 14px "Noto Sans SC", sans-serif';
+  ctx.fillText('毒舌AI 回复：', 40, aiStartY);
+
+  // Clean text: remove markdown-like markers, keep pure text
+  const cleanText = aiText
+    .replace(/<br>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+
+  const aiLines = wrapText(ctx, cleanText, W - 80);
+  const maxAiLines = aiLines.slice(0, 20); // cap at 20 lines
+  ctx.fillStyle = '#eaeaef';
+  ctx.font = '13px "Noto Sans SC", sans-serif';
+  maxAiLines.forEach((line, i) => {
+    if (aiStartY + 24 + i * 22 > 680) return; // don't overflow
+    ctx.fillText(line, 40, aiStartY + 24 + i * 22);
+  });
+
+  // ── Footer ──
+  ctx.fillStyle = 'rgba(244,63,94,0.08)';
+  ctx.fillRect(0, H-80, W, 80);
+  ctx.strokeStyle = 'rgba(244,63,94,0.1)';
+  ctx.beginPath(); ctx.moveTo(0, H-80); ctx.lineTo(W, H-80); ctx.stroke();
+
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 16px "Noto Sans SC", sans-serif';
+  ctx.fillText('🌶️ 高考毒舌助手', 40, H-46);
+
+  ctx.fillStyle = '#666688';
+  ctx.font = '11px "Noto Sans SC", sans-serif';
+  ctx.fillText('6月23日出分日 · 准时上线', 40, H-26);
+  ctx.fillText('扫码来挨骂 →', W - 160, H-40);
+
+  // QR placeholder
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillRect(W-120, H-68, 80, 80);
+
+  // ── Download ──
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '高考毒舌助手-分享卡片.png';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📸 分享卡片已下载！');
+  }, 'image/png');
+}
+
+// ── Text wrapping helper ──
+function wrapText(ctx, text, maxWidth) {
+  const lines = [];
+  for (const paragraph of text.split('\n')) {
+    if (!paragraph.trim()) { lines.push(''); continue; }
+    let line = '';
+    for (const char of paragraph) {
+      const test = line + char;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = char;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+  }
+  return lines;
+}
+
+// ── Rounded rect helper ──
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+  ctx.fill();
+}
+
 // ── Add Message ──
 function addUserMessage(text) {
   const w = document.createElement('div'); w.className = 'msg user';
@@ -322,7 +467,7 @@ function addAiMessage(html, isRoast) {
   // Share button
   const share = document.createElement('button'); share.className = 'share-btn';
   share.textContent = '📸 分享'; share.title = '生成分享卡片';
-  share.onclick = (e) => { e.stopPropagation(); showToast(); };
+  share.onclick = (e) => { e.stopPropagation(); generateShareCard(html); };
   w.appendChild(share);
 
   chat.appendChild(w); sd();
@@ -363,6 +508,7 @@ async function send() {
 
   // Add user message
   addUserMessage(message);
+  lastUserMsg = message;  // save for share card
   input.value = '';
   isLoading = true;
   sendBtn.disabled = true;
@@ -399,7 +545,7 @@ async function send() {
     // Share button
     const share = document.createElement('button'); share.className = 'share-btn';
     share.textContent = '📸 分享';
-    share.onclick = (e) => { e.stopPropagation(); showToast(); };
+    share.onclick = (e) => { e.stopPropagation(); generateShareCard(html); };
     w.appendChild(share);
 
     chat.appendChild(w);
@@ -438,6 +584,9 @@ async function send() {
     // Final format
     currentBubble.innerHTML = formatReply(fullText);
 
+    // Update share button to use final text
+    share.onclick = (e) => { e.stopPropagation(); generateShareCard(fullText); };
+
     // Add roast class if it contains roast content
     if (fullText.includes('😈') || fullText.includes('毒舌')) {
       w.classList.add('roast');
@@ -471,6 +620,7 @@ async function send() {
 
 // ── Quick send ──
 function quickSend(msg) {
+  lastUserMsg = msg;
   input.value = msg;
   send();
 }
