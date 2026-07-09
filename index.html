@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>高考毒舌助手</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0b0b1a; --bg-chat: #0b0b1a;
+    --bubble-user: #4f46e5; --bubble-ai: #14142e;
+    --text: #eaeaef; --text-dim: #8888a8; --text-faint: #5a5a7a;
+    --accent: #f43f5e; --accent-glow: rgba(244,63,94,0.12);
+    --border: rgba(255,255,255,0.05); --card-bg: rgba(255,255,255,0.015);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #070711; display: flex; justify-content: center;
+    align-items: center; min-height: 100vh; min-height: 100dvh;
+    padding: 8px;
+  }
+
+  .app {
+    width: 100%; max-width: 420px; height: 100vh; height: 100dvh;
+    background: var(--bg); border-radius: 28px;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 0 0 2px #181830, 0 0 0 4px #101024, 0 0 0 6px #080814, 0 20px 60px rgba(0,0,0,0.7);
+    position: relative;
+  }
+  @media (max-width: 440px) {
+    .app { border-radius: 0; max-width: 100%; box-shadow: none; }
+    body { padding: 0; }
+  }
+
+  /* Demo banner */
+  .demo-banner {
+    background: linear-gradient(135deg, rgba(244,63,94,0.15), rgba(244,63,94,0.05));
+    color: var(--accent); text-align: center; padding: 6px 16px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+    flex-shrink: 0; border-bottom: 1px solid rgba(244,63,94,0.1);
+  }
+
+  /* Status Bar */
+  .status-bar {
+    background: linear-gradient(135deg, rgba(244,63,94,0.1), rgba(244,63,94,0.03));
+    color: var(--accent); text-align: center; padding: 8px 16px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    flex-shrink: 0; border-bottom: 1px solid rgba(244,63,94,0.08);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .status-bar .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+  .countdown-num { font-weight: 900; font-size: 13px; }
+
+  /* Header */
+  .header {
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0; border-bottom: 1px solid var(--border);
+  }
+  .header-avatar {
+    width: 40px; height: 40px; background: var(--accent); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; box-shadow: 0 3px 12px rgba(244,63,94,0.25);
+    position: relative;
+  }
+  .header-avatar::after {
+    content: ''; position: absolute; bottom: -1px; right: -1px;
+    width: 10px; height: 10px; background: #4ade80; border-radius: 50%;
+    border: 2px solid var(--bg);
+  }
+  .header-info { flex: 1; }
+  .header-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .header-subtitle { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+  .header-roast {
+    display: flex; align-items: center; gap: 3px;
+    background: rgba(244,63,94,0.08); padding: 4px 10px;
+    border-radius: 14px; border: 1px solid rgba(244,63,94,0.1);
+    font-size: 10px; color: var(--accent); font-weight: 700;
+    flex-shrink: 0;
+  }
+  .header-roast .pep { font-size: 12px; }
+  .header-roast .pep.dim { opacity: 0.2; filter: grayscale(1); }
+
+  /* Quick Chips */
+  .quick-chips {
+    display: flex; gap: 6px; padding: 8px 14px; flex-shrink: 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .quick-chips::-webkit-scrollbar { display: none; }
+  .quick-chip {
+    font-size: 11px; padding: 7px 14px; border-radius: 16px; white-space: nowrap;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer; font-family: inherit;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .quick-chip:hover { background: rgba(244,63,94,0.06); border-color: rgba(244,63,94,0.15); color: var(--text); }
+  .quick-chip:active { transform: scale(0.95); }
+
+  /* Chat Area */
+  .chat {
+    flex: 1; overflow-y: auto; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    scroll-behavior: smooth;
+  }
+  .chat::-webkit-scrollbar { width: 2px; }
+  .chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.04); border-radius: 2px; }
+
+  /* Welcome */
+  .welcome {
+    align-self: center; text-align: center; padding: 40px 20px;
+    animation: fadeUp 0.5s ease-out;
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .welcome .icon { font-size: 48px; margin-bottom: 12px; }
+  .welcome h2 { font-size: 18px; font-weight: 900; color: var(--text); margin-bottom: 6px; }
+  .welcome p { font-size: 12px; color: var(--text-dim); line-height: 1.8; }
+
+  /* Messages */
+  @keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .msg {
+    max-width: 86%; animation: msgIn 0.3s ease-out both;
+    display: flex; flex-direction: column;
+  }
+  .msg.user { align-self: flex-end; }
+  .msg.ai   { align-self: flex-start; }
+  .bubble {
+    padding: 10px 14px; border-radius: 18px;
+    font-size: 13.5px; line-height: 1.75; word-break: break-word;
+    color: var(--text);
+  }
+  .msg.user .bubble {
+    background: var(--bubble-user);
+    border-bottom-right-radius: 6px; font-weight: 500;
+  }
+  .msg.ai .bubble {
+    background: var(--bubble-ai);
+    border-bottom-left-radius: 6px;
+  }
+
+  .msg.ai.roast .bubble {
+    border-left: 3px solid var(--accent);
+    background: rgba(244,63,94,0.04);
+  }
+
+  .prefix {
+    display: block; font-size: 10.5px; font-weight: 700;
+    color: var(--accent); margin-bottom: 5px; letter-spacing: 0.5px;
+  }
+
+  .hl { color: var(--accent); font-weight: 600; }
+
+  .share-btn {
+    display: none; align-self: flex-end;
+    margin-top: 4px; font-size: 10px; color: var(--accent);
+    cursor: pointer; padding: 4px 10px; border-radius: 10px;
+    background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.1);
+    font-family: inherit; transition: all 0.15s;
+  }
+  .msg.ai:hover .share-btn { display: inline-block; }
+  .share-btn:hover { background: rgba(244,63,94,0.15); }
+  .share-btn:active { transform: scale(0.93); }
+
+  /* Typing */
+  .typing {
+    display: flex; gap: 5px; padding: 14px 16px; align-items: center;
+    align-self: flex-start; animation: msgIn 0.2s ease-out both;
+  }
+  .typing span {
+    width: 7px; height: 7px; background: #555; border-radius: 50%;
+    animation: bounce 1.4s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{opacity:0.3;transform:translateY(0)} 30%{opacity:1;transform:translateY(-6px)} }
+
+  /* Input Bar */
+  .input-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px 12px; flex-shrink: 0;
+    border-top: 1px solid var(--border);
+  }
+  .input-field {
+    flex: 1; background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05); border-radius: 20px;
+    padding: 10px 16px; color: var(--text); font-size: 13px;
+    font-family: inherit; outline: none; transition: all 0.2s;
+  }
+  .input-field::placeholder { color: #444; }
+  .input-field:focus { border-color: rgba(244,63,94,0.2); box-shadow: 0 0 0 3px rgba(244,63,94,0.04); }
+  .send-btn {
+    width: 38px; height: 38px; background: var(--accent); border: none;
+    border-radius: 14px; color: #fff; font-size: 14px; cursor: pointer;
+    flex-shrink: 0; box-shadow: 0 4px 12px rgba(244,63,94,0.3);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .send-btn:hover { transform: scale(1.04); box-shadow: 0 6px 18px rgba(244,63,94,0.4); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn:disabled { opacity: 0.35; transform: none; box-shadow: none; }
+
+  /* Toast */
+  .toast {
+    position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+    background: rgba(244,63,94,0.92); color: #fff; padding: 8px 18px;
+    border-radius: 16px; font-size: 12px; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s; z-index: 20; white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Demo banner -->
+  <div class="demo-banner">⚡ 演示模式 · 完整功能需接入 DeepSeek API</div>
+
+  <!-- Countdown -->
+  <div class="status-bar" id="statusBar">
+    <span class="dot"></span>距高考出分日还有 <span class="countdown-num" id="countdown">?</span> 天 — 毒舌蓄力中
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-avatar">🎓</div>
+    <div class="header-info">
+      <div class="header-name">高考毒舌助手</div>
+      <div class="header-subtitle">别的AI帮你算分，我帮你认清自己</div>
+    </div>
+    <div class="header-roast" id="roastLevel">
+      <span class="pep">🌶️</span><span class="pep">🌶️</span><span class="pep">🌶️</span>
+      <span class="pep dim">🌶️</span><span class="pep dim">🌶️</span>
+      毒舌 Lv.?
+    </div>
+  </div>
+
+  <!-- Quick chips -->
+  <div class="quick-chips">
+    <div class="quick-chip" onclick="quickSend('广东 物理类 625分 想学计算机')">625分 · 计算机</div>
+    <div class="quick-chip" onclick="quickSend('广东 物理类 580分 想学临床医学')">580分 · 医学</div>
+    <div class="quick-chip" onclick="quickSend('广东 物理类 450分 不知道学什么')">450分 · 迷茫</div>
+    <div class="quick-chip" onclick="quickSend('生物医学工程这个专业怎么样')">专业翻译官</div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat" id="chat">
+    <div class="welcome" id="welcome">
+      <div class="icon">😈</div>
+      <h2>输入你的分数，开始挨骂</h2>
+      <p>
+        格式：省份 + 选科 + 分数 + 意向<br>
+        例如：广东 物理类 625分 想学计算机<br><br>
+        也可以问：「XX专业怎么样？」
+      </p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-bar">
+    <input class="input-field" id="input" type="text"
+           placeholder="输入分数或问题..."
+           autocomplete="off">
+    <button class="send-btn" id="sendBtn" onclick="send()">↑</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">📸 截图卡片已生成</div>
+</div>
+
+<!-- Hidden canvas for share card generation -->
+<canvas id="shareCanvas" width="600" height="800" style="display:none"></canvas>
+
+<script>
+// ── State ──
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const toast = document.getElementById('toast');
+let isLoading = false;
+let lastUserMsg = '';
+
+// ── Countdown ──
+function updateCountdown() {
+  const target = new Date('2026-06-23');
+  const now = new Date();
+  const days = Math.max(0, Math.ceil((target - now) / (1000*60*60*24)));
+  document.getElementById('countdown').textContent = days;
+}
+updateCountdown();
+
+// ── Demo Response Generator ──
+function demoResponse(message) {
+  const msg = message.toLowerCase();
+
+  // Extract score
+  const scoreMatch = message.match(/(\d{3,4})\s*分/);
+  const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
+
+  // Extract province/subject
+  const provinces = ['广东','北京','上海','江苏','浙江','湖北','湖南','山东','四川'];
+  let province = '广东';
+  for (const p of provinces) {
+    if (message.includes(p)) { province = p; break; }
+  }
+
+  const hasCS = msg.includes('计算机') || msg.includes('软件') || msg.includes('编程') || msg.includes('cs');
+  const hasMed = msg.includes('医学') || msg.includes('临床') || msg.includes('医');
+  const hasBioMed = msg.includes('生物医学工程') || msg.includes('bme');
+  const hasNoIdea = msg.includes('不知道') || msg.includes('迷茫');
+
+  // 专业翻译官模式
+  if (hasBioMed || msg.includes('专业怎么样')) {
+    setRoastLevel(3);
+    return `📚 <b>生物医学工程（BME）</b><br><br>
+🔹 <b>官方定义：</b>用工程技术解决医学问题，造医疗设备的人。<br><br>
+🔹 <b>学生真实生活：</b>大一电路大物焊板子，大二信号处理解剖学，大三图像处理+嵌入式，大四：我到底是工科生还是医学生？？毕业才发现——医院不要你因为你不是临床，IT公司觉得你不够码农，医疗器械公司说「我们只要销售」。<br><br>
+🔹 <b>毕业去向：</b>医疗器械公司（迈瑞/联影/西门子）、医院设备科（养老岗）、转码（大多数人的出路）、读研读博（然后发现还是转码）。<br><br>
+🤖 <i>以上是一个AI的理解，去找这个专业的学长学姐聊聊比听我的靠谱。</i>`;
+  }
+
+  // Low score
+  if (score > 0 && score < 400) {
+    setRoastLevel(1);
+    return `高考分数不定义你的人生。<br><br>
+📊 <b>现实路径</b><br><br>
+你的选择比高分考生更宽——因为你可以往任何一个方向走。<br><br>
+🔹 <b>专科优质专业：</b><br>
+• 深圳职业技术学院 - 人工智能技术应用（就业率97%）<br>
+• 广东轻工职业技术学院 - 机电一体化<br>
+• 广州番禺职业技术学院 - 大数据技术<br><br>
+🔹 <b>专升本路径：</b>专科第三年参加统招专升本，拿全日制本科，和高考直接上本科效力一样。<br><br>
+🔹 <b>职业教育方向：</b>如果对实操更感兴趣，可以考虑IT培训机构（前端/测试/运维），6个月出师，起薪也不错。<br><br>
+🔹 <b>复读的客观分析（只分析不建议）：</b>如果你的分数远低于平时水平（差60分以上），复读是有可能翻盘的。但如果已是正常发挥，再读一年提升有限。<br><br>
+🤖 <i>路不止高考一条。我是AI，说的不一定都对——但我说的是真心话。</i>`;
+  }
+
+  // Mid score
+  if (score >= 400 && score < 480) {
+    setRoastLevel(2);
+    return `📊 <b>现实一点</b><br><br>
+400多分是个尴尬的区间——比专科高，比好本科还差一口气。但你仍然有不少选择。<br><br>
+🔴 <b>冲刺：</b>广东海洋大学 · 计算机科学与技术（去年最低 470）<br>
+🟡 <b>稳妥：</b>佛山科学技术学院 · 软件工程 / 惠州学院 · 电子信息<br>
+🟢 <b>保底：</b>东莞理工学院 · 自动化 / 五邑大学 · 通信工程<br><br>
+💡 <b>替代思路：</b>如果对专业有执念（比如非计算机不读），可以选低一档学校的好专业。四年后，你的能力比学校的牌子值钱。<br><br>
+🤖 <i>以上数据为演示参考，实际录取线每年变化，请以省考试院公布为准。我是AI不是算命先生。</i>`;
+  }
+
+  // High score
+  if (score >= 480) {
+    setRoastLevel(4);
+    if (hasCS && score >= 600) {
+      return `😈 <b>毒舌时间</b><br>
+${score}分想冲${province}的计算机？有野心。但你知道去年华科计算机在${province}多少分吗？651。你这分数连门卫的微信都加不上。<br><br>
+📊 <b>现实一点</b><br>
+🔴 冲刺：华南理工大学 · 计算机类（去年最低 ${score+15}，悬）<br>
+🟡 稳妥：深圳大学 · 计算机科学与技术 / 广东工业大学 · 软件工程<br>
+🟢 保底：华南农业大学 · 计算机科学与技术 / 广州大学 · 网络工程<br><br>
+💡 华工CS确实香，但不如先看看深大——腾讯就在隔壁，实习比华工还方便。<br><br>
+🤖 <i>以上数据来自公开渠道，我是AI不是算命先生。最终决定问你自己和你爸妈——但别问你二舅，他只会说「学计算机好啊出来修电脑」。</i>`;
+    }
+    if (hasMed && score >= 560) {
+      return `😈 <b>毒舌时间</b><br>
+${score}分想学医？勇气可嘉。但你知道临床医学的分数线比其他专业高多少吗？至少20分。你这分数在${province}，好医学院的临床基本是「看看就好」的水平。<br><br>
+📊 <b>现实一点</b><br>
+🔴 冲刺：南方医科大学 · 临床医学（去年最低 ${score+22}）<br>
+🟡 稳妥：广州医科大学 · 临床医学 / 广东医科大学 · 口腔医学<br>
+🟢 保底：广东药科大学 · 预防医学 / 广州中医药大学 · 中西医结合<br><br>
+💡 如果铁了心要当医生，口腔医学是个被低估的方向——分数线比临床低，收入不比临床差，还不用值夜班。<br><br>
+🤖 <i>以上数据为演示参考，谨遵医嘱这句话我不敢说，因为我不是医生。我是AI，最终决定问你自己。</i>`;
+    }
+    return `😈 <b>毒舌时间</b><br>
+${score}分，不错。但别飘——这个分数段的人最多，去好学校好专业全靠志愿填报的策略，不是靠分数。<br><br>
+📊 <b>现实一点</b><br>
+你的分数在${province}处于中上水平。<br>
+🔴 冲刺：选排名比去年最低分高5-10分的学校<br>
+🟡 稳妥：选过去3年录取线与你的分数±3分以内的<br>
+🟢 保底：选比你分数低10-15分的学校<br><br>
+💡 提示：填志愿时，<b>专业 > 学校</b>。一个211的冷门专业，就业可能不如双非的热门专业。<br><br>
+🤖 <i>以上仅为演示数据。我是AI，最终志愿请以省考试院官方数据为准。</i>`;
+  }
+
+  // No score
+  if (hasNoIdea) {
+    setRoastLevel(2);
+    return `📊 <b>不知道学什么？正常。</b><br><br>
+18岁就要决定一生方向，这本身就是个荒谬的事。给你三个思路：<br><br>
+🔹 <b>排除法：</b>先想清楚你不想要什么。讨厌数学？排除工科。讨厌背东西？排除医学法律。社恐？排除需要大量沟通的专业。<br><br>
+🔹 <b>倒推法：</b>你希望10年后的生活是什么样？想在一线城市拿高薪？计算机/金融。想稳定有编制？师范/医学。想做自己的东西？设计/传媒。<br><br>
+🔹 <b>现实法：</b>如果你实在没偏好，选一个「就业面广」的专业——计算机、电子信息、自动化、会计。这些专业毕业后的选择比冷门专业多很多。<br><br>
+🤖 <i>以上建议请理性看待，我是AI，不是人生导师。</i>`;
+  }
+
+  // Default
+  setRoastLevel(3);
+  return `😈 <b>毒舌时间</b><br>
+请输入分数和想学的专业，不然我只能吐槽你连问题都问不清楚——这比考低分更让人着急。<br><br>
+📊 <b>格式：</b>省份 + 选科 + 分数 + 意向<br>
+例如：「广东 物理类 625分 想学计算机」<br><br>
+也可以直接问：「生物医学工程这个专业怎么样」<br><br>
+🤖 <i>我是演示模式AI，完整毒舌体验需要接入 DeepSeek API。但UI你已经看到了——就是这种感觉。</i>`;
+}
+
+// ── Roast level indicator ──
+function setRoastLevel(level) {
+  const peppers = document.querySelectorAll('#roastLevel .pep');
+  peppers.forEach((p, i) => {
+    if (i < level) { p.classList.remove('dim'); }
+    else { p.classList.add('dim'); }
+  });
+  document.querySelector('#roastLevel').childNodes[
+    document.querySelector('#roastLevel').childNodes.length - 1
+  ].textContent = `毒舌 Lv.${level}`;
+}
+
+// ── Scroll ──
+function sd() {
+  chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+}
+
+// ── Toast ──
+function showToast(msg) {
+  toast.textContent = msg || '📸 分享卡片已生成';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+// ── Share Card Generator ──
+function generateShareCard(aiText) {
+  const canvas = document.getElementById('shareCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = 600, H = 800;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0e0e22');
+  bg.addColorStop(1, '#0a0a18');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#f43f5e';
+  ctx.fillRect(0, 0, W, 3);
+
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 22px "Noto Sans SC", sans-serif';
+  ctx.fillText('🎓 高考毒舌助手', 40, 60);
+
+  ctx.fillStyle = '#8888a8';
+  ctx.font = '13px "Noto Sans SC", sans-serif';
+  ctx.fillText('别的AI帮你算分，我帮你认清自己', 40, 88);
+
+  ctx.strokeStyle = 'rgba(244,63,94,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(W-40, 110); ctx.stroke();
+
+  ctx.fillStyle = '#8888a8';
+  ctx.font = '12px "Noto Sans SC", sans-serif';
+  ctx.fillText('考生提问：', 40, 140);
+
+  const userLines = wrapText(ctx, lastUserMsg, W - 160);
+  const userBubbleH = Math.max(36, userLines.length * 24 + 24);
+  const userBubbleW = Math.min(400, ctx.measureText(lastUserMsg).width + 40);
+  ctx.fillStyle = '#4f46e5';
+  roundRect(ctx, W - 40 - userBubbleW, 128, userBubbleW, userBubbleH, 14);
+  ctx.fillStyle = '#eaeaef';
+  ctx.font = '14px "Noto Sans SC", sans-serif';
+  userLines.forEach((line, i) => {
+    ctx.fillText(line, W - 40 - userBubbleW + 20, 152 + i * 24);
+  });
+
+  const userEndY = 128 + userBubbleH + 20;
+  ctx.strokeStyle = 'rgba(244,63,94,0.1)';
+  ctx.beginPath(); ctx.moveTo(40, userEndY); ctx.lineTo(W-40, userEndY); ctx.stroke();
+
+  const aiStartY = userEndY + 20;
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 14px "Noto Sans SC", sans-serif';
+  ctx.fillText('毒舌AI 回复：', 40, aiStartY);
+
+  const cleanText = aiText
+    .replace(/<br>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+
+  const aiLines = wrapText(ctx, cleanText, W - 80);
+  const maxAiLines = aiLines.slice(0, 20);
+  ctx.fillStyle = '#eaeaef';
+  ctx.font = '13px "Noto Sans SC", sans-serif';
+  maxAiLines.forEach((line, i) => {
+    if (aiStartY + 24 + i * 22 > 680) return;
+    ctx.fillText(line, 40, aiStartY + 24 + i * 22);
+  });
+
+  ctx.fillStyle = 'rgba(244,63,94,0.08)';
+  ctx.fillRect(0, H-80, W, 80);
+  ctx.strokeStyle = 'rgba(244,63,94,0.1)';
+  ctx.beginPath(); ctx.moveTo(0, H-80); ctx.lineTo(W, H-80); ctx.stroke();
+
+  ctx.fillStyle = '#f43f5e';
+  ctx.font = 'bold 16px "Noto Sans SC", sans-serif';
+  ctx.fillText('🌶️ 高考毒舌助手', 40, H-46);
+
+  ctx.fillStyle = '#666688';
+  ctx.font = '11px "Noto Sans SC", sans-serif';
+  ctx.fillText('6月23日出分日 · 准时上线', 40, H-26);
+  ctx.fillText('扫码来挨骂 →', W - 160, H-40);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.fillRect(W-120, H-68, 80, 80);
+
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '高考毒舌助手-分享卡片.png';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📸 分享卡片已下载！');
+  }, 'image/png');
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const lines = [];
+  for (const paragraph of text.split('\n')) {
+    if (!paragraph.trim()) { lines.push(''); continue; }
+    let line = '';
+    for (const char of paragraph) {
+      const test = line + char;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = char;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+  }
+  return lines;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ── Add Message ──
+function addUserMessage(text) {
+  const w = document.createElement('div'); w.className = 'msg user';
+  const b = document.createElement('div'); b.className = 'bubble';
+  b.textContent = text; w.appendChild(b);
+  chat.appendChild(w); sd();
+}
+
+function addAiMessage(html, isRoast) {
+  const w = document.createElement('div');
+  w.className = 'msg ai' + (isRoast ? ' roast' : '');
+  const b = document.createElement('div'); b.className = 'bubble';
+  b.innerHTML = html;
+  w.appendChild(b);
+
+  const share = document.createElement('button'); share.className = 'share-btn';
+  share.textContent = '📸 分享'; share.title = '生成分享卡片';
+  share.onclick = (e) => { e.stopPropagation(); generateShareCard(html); };
+  w.appendChild(share);
+
+  chat.appendChild(w); sd();
+}
+
+function addTyping() {
+  const w = document.createElement('div'); w.className = 'typing';
+  w.innerHTML = '<span></span><span></span><span></span>';
+  chat.appendChild(w); sd();
+  return w;
+}
+
+// ── Format AI response ──
+function formatReply(text) {
+  let html = text.replace(/\n/g, '<br>');
+  html = html.replace(/(\d{3,4})分/g, '<span class="hl">$1分</span>');
+  if (text.includes('😈')) setRoastLevel(4);
+  else if (text.includes('毒舌')) setRoastLevel(3);
+  else if (text.includes('不定义你的人生')) setRoastLevel(1);
+  return html;
+}
+
+// ── Simulated typing effect ──
+async function simulateTyping(fullText, bubble) {
+  // Strip HTML for character-by-character display
+  const stripped = fullText.replace(/<[^>]+>/g, '');
+  const delay = 20; // ms per character, faster for demo
+  for (let i = 0; i <= stripped.length; i++) {
+    // Rebuild formatted text from stripped prefix
+    let display = stripped.slice(0, i);
+    display = display.replace(/\n/g, '<br>');
+    display = display.replace(/(\d{3,4})分/g, '<span class="hl">$1分</span>');
+    bubble.innerHTML = display;
+    sd();
+    await new Promise(r => setTimeout(r, delay));
+  }
+  bubble.innerHTML = fullText;
+  sd();
+}
+
+// ── Send ──
+async function send() {
+  const message = input.value.trim();
+  if (!message || isLoading) return;
+
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  addUserMessage(message);
+  lastUserMsg = message;
+  input.value = '';
+  isLoading = true;
+  sendBtn.disabled = true;
+
+  const typing = addTyping();
+
+  try {
+    // Try real API first
+    const resp = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    });
+
+    if (resp.ok) {
+      typing.remove();
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      const w = document.createElement('div'); w.className = 'msg ai';
+      const b = document.createElement('div'); b.className = 'bubble'; b.textContent = '';
+      w.appendChild(b);
+      const share = document.createElement('button'); share.className = 'share-btn';
+      share.textContent = '📸 分享';
+      share.onclick = (e) => { e.stopPropagation(); generateShareCard(fullText); };
+      w.appendChild(share);
+      chat.appendChild(w);
+      sd();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split('\n');
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6);
+          if (data === '[DONE]') break;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              fullText += parsed.content;
+              let formatted = fullText.replace(/\n/g, '<br>');
+              formatted = formatted.replace(/(\d{3,4})分/g, '<span class="hl">$1分</span>');
+              b.innerHTML = formatted;
+              sd();
+            }
+          } catch(e) {}
+        }
+      }
+      b.innerHTML = formatReply(fullText);
+      share.onclick = (e) => { e.stopPropagation(); generateShareCard(fullText); };
+      if (fullText.includes('😈') || fullText.includes('毒舌')) w.classList.add('roast');
+      return;
+    }
+  } catch(e) {
+    // API not available — fall through to demo mode
+  }
+
+  // ── Demo mode ──
+  typing.remove();
+
+  // Add empty bubble
+  const w = document.createElement('div'); w.className = 'msg ai';
+  const b = document.createElement('div'); b.className = 'bubble';
+  b.textContent = '';
+  w.appendChild(b);
+
+  const share = document.createElement('button'); share.className = 'share-btn';
+  share.textContent = '📸 分享';
+  w.appendChild(share);
+  chat.appendChild(w);
+  sd();
+
+  // Generate demo response
+  const reply = demoResponse(message);
+  const isRoast = reply.includes('😈') || reply.includes('毒舌');
+  if (isRoast) w.classList.add('roast');
+
+  // Simulate typing
+  await simulateTyping(reply, b);
+
+  // Setup share
+  share.onclick = (e) => { e.stopPropagation(); generateShareCard(reply); };
+
+  isLoading = false;
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+// ── Quick send ──
+function quickSend(msg) {
+  lastUserMsg = msg;
+  input.value = msg;
+  send();
+}
+
+// ── Keyboard ──
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+
+input.focus();
+</script>
+</body>
+</html>
